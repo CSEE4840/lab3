@@ -99,36 +99,28 @@ int main()
     if (x >= x_max-r){
 	dx=-dx;
 	x=x_max-r;
-	set_background_color(&colors[i%COLORS]);
-	i=(i+1)%COLORS;
-
     }
     else if (x<=r){
  	dx=-dx;
 	x=r;
-	set_background_color(&colors[i%COLORS]);
-        i=(i+1)%COLORS;
-
     }
     else if (y >= y_max-r){
         dy=-dy;
 	y=y_max-r;
-	set_background_color(&colors[i%COLORS]);
-        i=(i+1)%COLORS;
-	
     }
     else if (y<=r) {
 	dy=-dy;
         y=r;
-	set_background_color(&colors[i%COLORS]);
-        i=(i+1)%COLORS;
-
     }
+    
+    set_background_color(&colors[i%COLORS]);
+    i=(i+1)%COLORS;
+    print_background_color();
+
     center.x=x;
     center.y=y;
 
     set_center(&center);
-    print_center();
 
     usleep(10000);
 
