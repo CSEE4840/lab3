@@ -12,46 +12,62 @@
  *        2    | Blue  |  Blue component of background color (0-255)
  */
 
-module vga_ball(input logic        clk,
-	        input logic 	   reset,
-		input logic [7:0]  writedata,
-		input logic 	   write,
-		input 		   chipselect,
-		input logic [2:0]  address,
+module vga_ball(
+    input logic        clk,
+    input logic        reset,
+    input logic [7:0]  writedata,
+    input logic        write,
+    input             chipselect,
+    input logic [2:0]  address,
 
-		output logic [7:0] VGA_R, VGA_G, VGA_B,
-		output logic 	   VGA_CLK, VGA_HS, VGA_VS,
-		                   VGA_BLANK_n,
-		output logic 	   VGA_SYNC_n);
+    output logic [7:0] VGA_R, VGA_G, VGA_B,
+    output logic       VGA_CLK, VGA_HS, VGA_VS,
+                       VGA_BLANK_n,
+    output logic       VGA_SYNC_n
+);
 
-   logic [10:0]	   hcount;
-   logic [9:0]     vcount;
+    logic [10:0]       hcount;
+    logic [9:0]        vcount;
+    logic [7:0]        background_r, background_g, background_b;
+    logic [15:0]       center_x, center_y, radius;
 
-   logic [24:0] 	   xcoordinate, ycoordinate, radius;
-	
-   vga_counters counters(.clk50(clk), .*);
+    vga_counters counters(.clk50(clk), .*);
 
-   always_ff @(posedge clk)
-     if (reset) begin
-	    xcoordinate <= 25'd15;
-	    ycoordinate <= 11'd320;
-	    radius <= 10'd240;
-     end else if (chipselect && write)
-       case (address)
-	      3'h0 : xcoordinate <= writedata[7:0];
-	      3'h1 : xcoordinate <= {xcoordinate[7:0] ,writedata[7:0]};
-	      3'h2 : ycoordinate <= writedata[7:0];
-	      3'h3 : ycoordinate <= {ycoordinate[7:0] ,writedata[7:0]};
-       endcase
+    always_ff @(posedge clk)
+        if (reset) begin
+            background_r <= 8'h0;
+            background_g <= 8'h0;
+            background_b <= 8'h80;
+            center_x <= 16'd320; // Default center at middle of 640 width
+            center_y <= 16'd240; // Default center at middle of 480 height
+            radius <= 16'd15;    // Default radius
+        end else if (chipselect && write) 
+            case (address)
+                3'h0 : background_r <= writedata;
+                3'h1 : background_g <= writedata;
+                3'h2 : background_b <= writedata;
+                3'h3 : center_x[7:0] <= writedata;      // Lower 8 bits of center_x
+                3'h4 : center_x[15:8] <= writedata;     // Upper 8 bits of center_x
+                3'h5 : center_y[7:0] <= writedata;      // Lower 8 bits of center_y
+                3'h6 : center_y[15:8] <= writedata;     // Upper 8 bits of center_y
+                3'h7 : radius[7:0] <= writedata;        // Lower 8 bits of radius
+                3'h8 : radius[15:8] <= writedata;       // Upper 8 bits of radius
+            endcase
 
-   always_comb begin
-      {VGA_R, VGA_G, VGA_B} = {8'h0, 8'h0, 8'h0};
-      if (VGA_BLANK_n ) begin
-            if (((hcount[10:1] - xcoordinate) * (hcount[10:1] - xcoordinate)  + (vcount - ycoordinate) * (vcount - ycoordinate)) <= 25'd225)
-                {VGA_R, VGA_G, VGA_B} = {8'hff, 8'h0, 8'hff}; // The color of the circle is purple
+    always_comb begin
+        {VGA_R, VGA_G, VGA_B} = {8'h0, 8'h0, 8'h0};
+        if (VGA_BLANK_n) begin
+            logic [15:0] dx = hcount - center_x;
+            logic [15:0] dy = vcount - center_y;
+            if ((dx * dx + dy * dy) <= (radius * radius))
+                {VGA_R, VGA_G, VGA_B} = {8'hff, 8'hff, 8'hff}; 
+            else
+                {VGA_R, VGA_G, VGA_B} = {background_r, background_g, background_b};
         end
-	  end
+    end
+
 endmodule
+
 
 module vga_counters(
  input logic 	     clk50, reset,
