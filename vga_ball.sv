@@ -1,3 +1,4 @@
+
 /*
  * Avalon memory-mapped peripheral that generates VGA
  *
@@ -10,12 +11,14 @@
  *        0    |  Red  |  Red component of background color (0-255)
  *        1    | Green |  Green component of background color (0-255)
  *        2    | Blue  |  Blue component of background color (0-255)
+ *        3    | x 15..0 |      center x
+ *        4    | y  15 ...0| center y
  */
 
 module vga_ball(
     input logic        clk,
     input logic        reset,
-    input logic [7:0]  writedata,
+    input logic [15:0]  writedata,
     input logic        write,
     input             chipselect,
     input logic [2:0]  address,
@@ -28,46 +31,37 @@ module vga_ball(
 
     logic [10:0]       hcount;
     logic [9:0]        vcount;
-    logic [7:0]        background_r, background_g, background_b;
+    logic [7:0]        bg_r,bg_g,bg_b;
     logic [15:0]       center_x, center_y, radius;
 
     vga_counters counters(.clk50(clk), .*);
 
     always_ff @(posedge clk)
         if (reset) begin
-            background_r <= 8'h0;
-            background_g <= 8'h0;
-            background_b <= 8'h80;
-            center_x <= 16'd320; // Default center at middle of 640 width
-            center_y <= 16'd240; // Default center at middle of 480 height
-            radius <= 16'd15;    // Default radius
+            bg_r <= 8'h0;
+	    bg_g <= 8'h0;
+	    bg_b <= 8'h80;
+            center_x <= 11'd320; 
+            center_y <= 10'd240; 
+            radius <= 25'd15; 
         end else if (chipselect && write) 
             case (address)
-                3'h0 : background_r <= writedata;
-                3'h1 : background_g <= writedata;
-                3'h2 : background_b <= writedata;
-                3'h3 : center_x[7:0] <= writedata;      // Lower 8 bits of center_x
-                3'h4 : center_x[15:8] <= writedata;     // Upper 8 bits of center_x
-                3'h5 : center_y[7:0] <= writedata;      // Lower 8 bits of center_y
-                3'h6 : center_y[15:8] <= writedata;     // Upper 8 bits of center_y
-                3'h7 : radius[7:0] <= writedata;        // Lower 8 bits of radius
-                3'h8 : radius[15:8] <= writedata;       // Upper 8 bits of radius
+		3'h0 : bg_r <= writedata[7:0];
+		3'h1 : bg_r <= writedata[7:0];
+		3'h2 : bg_r <= writedata[7:0];
+                3'h3 : center_x <= writedata; 
+                3'h4 : center_y <= writedata; 
             endcase
 
     always_comb begin
-        {VGA_R, VGA_G, VGA_B} = {8'h0, 8'h0, 8'h0};
+        {VGA_R, VGA_G, VGA_B} = {8'h0, 8'h0, 8'hff};
         if (VGA_BLANK_n) begin
-            logic [15:0] dx = hcount - center_x;
-            logic [15:0] dy = vcount - center_y;
-            if ((dx * dx + dy * dy) <= (radius * radius))
-                {VGA_R, VGA_G, VGA_B} = {8'hff, 8'hff, 8'hff}; 
-            else
-                {VGA_R, VGA_G, VGA_B} = {background_r, background_g, background_b};
+            if (((hcount[10:1] - center_x) * (hcount[10:1] - center_x) + (vcount - center_y) * (vcount - center_y)) <= (25'd255))
+                {VGA_R, VGA_G, VGA_B} = {8'hff, 8'h0, 8'hff}; 
         end
     end
 
 endmodule
-
 
 module vga_counters(
  input logic 	     clk50, reset,
