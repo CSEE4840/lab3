@@ -36,14 +36,11 @@
 #define DRIVER_NAME "vga_ball"
 
 /* Device registers */
-#define BG_RED(x) ((x)+4)
-#define BG_GREEN(x) ((x)+5)
-#define BG_BLUE(x) ((x)+6)
-#define X_CENTER_LOWER(x) (x)
-#define X_CENTER_UPPER(x) ((x)+1)
-#define Y_CENTER_LOWER(x) ((x)+2)
-#define Y_CENTER_UPPER(x) ((x)+3)
-
+#define BG_RED(x) ((x))
+#define BG_GREEN(x) ((x)+2)
+#define BG_BLUE(x) ((x)+4)
+#define X_CENTER(x) ((x)+6)
+#define Y_CENTER(x) ((x)+8)
 /*
  * Information about our device
  */
@@ -60,18 +57,17 @@ struct vga_ball_dev {
  */
 static void write_background(vga_ball_color_t *background)
 {
-	iowrite8(background->red, BG_RED(dev.virtbase) );
-	iowrite8(background->green, BG_GREEN(dev.virtbase) );
-	iowrite8(background->blue, BG_BLUE(dev.virtbase) );
+	iowrite16(background->red, BG_RED(dev.virtbase) );
+	iowrite16(background->green, BG_GREEN(dev.virtbase) );
+	iowrite16(background->blue, BG_BLUE(dev.virtbase) );
 	dev.background = *background;
 }
 
 static void write_center(vga_ball_center_t *center)
 {
-	iowrite8(center->x & 0xFF, X_CENTER_LOWER(dev.virtbase) );
-	iowrite8((center-> x>>8) & 0xFF, X_CENTER_UPPER(dev.virtbase) );
-	iowrite8(center->y & 0xFF, Y_CENTER_LOWER(dev.virtbase) );
-	iowrite8((center-> y>>8) & 0xFF, Y_CENTER_UPPER(dev.virtbase) );
+	
+	iowrite16(center->x , X_CENTER(dev.virtbase) );
+	iowrite16(center->y , Y_CENTER(dev.virtbase) );
 	dev.center = *center; 
 }
 
@@ -86,14 +82,14 @@ static long vga_ball_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case VGA_BALL_WRITE_BACKGROUND:
-		if (copy_from_user(&vla, (vga_ball_arg_t *) arg,
-				   sizeof(vga_ball_arg_t)))
+		if (copy_from_user(&vla.center, (vga_ball_center_t *) arg,
+				   sizeof(vga_ball_center_t)))
 			return -EACCES;
 		write_background(&vla.background);
 		break;
 	case VGA_BALL_WRITE_CENTER:
-		if (copy_from_user(&vla.center, (vga_ball_center_t *) arg,
-				  sizeof(vga_ball_center_t)))
+		if (copy_from_user(&vla, (vga_ball_arg_t *) arg,
+				  sizeof(vga_ball_arg_t)))
 			return -EACCES;
 		write_center(&vla.center);
 		break;
@@ -105,8 +101,8 @@ static long vga_ball_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		break;
 	case VGA_BALL_READ_CENTER:
 		vla.center = dev.center;
-		if (copy_to_user((vga_ball_center_t *) arg, &vla, 
-				sizeof(vga_ball_center_t)))
+		if (copy_to_user((vga_ball_arg_t *) arg, &vla, 
+				sizeof(vga_ball_arg_t)))
 			return -EACCES;
 		break;
 	default:

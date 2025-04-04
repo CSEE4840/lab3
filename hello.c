@@ -82,7 +82,8 @@ int main()
   int y_min=0;
   int x_max=640;
   int y_max=480;
-
+  int r = 15;
+  i =0;
 # define COLORS 9
 
   printf("VGA ball Userspace program started\n");
@@ -93,16 +94,43 @@ int main()
   }
 
   while(1){
-    printf("running should be fine");
     x+=dx;
     y+=dy;
-    if (x >= x_max || x <= x_min) dx=-dx;
-    if (y >= y_max || y <= y_min) dy=-dy;
+    if (x >= x_max-r){
+	dx=-dx;
+	x=x_max-r;
+	set_background_color(&colors[i%COLORS]);
+	i=(i+1)%COLORS;
+
+    }
+    else if (x<=r){
+ 	dx=-dx;
+	x=r;
+	set_background_color(&colors[i%COLORS]);
+        i=(i+1)%COLORS;
+
+    }
+    else if (y >= y_max-r){
+        dy=-dy;
+	y=y_max-r;
+	set_background_color(&colors[i%COLORS]);
+        i=(i+1)%COLORS;
+	
+    }
+    else if (y<=r) {
+	dy=-dy;
+        y=r;
+	set_background_color(&colors[i%COLORS]);
+        i=(i+1)%COLORS;
+
+    }
     center.x=x;
     center.y=y;
+
     set_center(&center);
     print_center();
-    usleep(30000);
+
+    usleep(10000);
 
   }
   
