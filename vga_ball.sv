@@ -1,85 +1,103 @@
-module vga_ball(
-    input logic        clk,
-    input logic        reset,
+module vga_ball (
+    input logic clk,
+    input logic reset,
     input logic [15:0] writedata,
-    input logic        write,
-    input              chipselect,
-    input logic [2:0]  address,
+    input logic write,
+    input logic chipselect,
+    input logic [2:0] address,
 
     output logic [7:0] VGA_R, VGA_G, VGA_B,
-    output logic       VGA_CLK, VGA_HS, VGA_VS,
-                       VGA_BLANK_n,
-    output logic       VGA_SYNC_n
+    output logic VGA_CLK, VGA_HS, VGA_VS,
+                  VGA_BLANK_n, VGA_SYNC_n
 );
 
+    // VGA timing counters
     logic [10:0] hcount;
-    logic [9:0]  vcount;
-    logic [7:0]  bg_r, bg_g, bg_b;
-    logic [15:0] center_x, center_y, radius;
+    logic [9:0] vcount;
+    logic video_on;
 
-    logic [9:0] ghost1_x = 200;
-    logic [9:0] ghost1_y = 100;
-    logic [9:0] ghost2_x = 400;
-    logic [9:0] ghost2_y = 300;
+    // Fixed positions for now
+    logic [9:0] ghost_x = 100;
+    logic [9:0] ghost_y = 100;
+    logic [9:0] pacman_x = 200;
+    logic [9:0] pacman_y = 100;
 
-    parameter TILE_SIZE = 40;
-    logic [4:0][4:0] wall_map = '{
-        5'b11111,
-        5'b10001,
-        5'b10101,
-        5'b10001,
-        5'b11111
+    // Bitmap for 16x16 ghost
+    logic [15:0] ghost_bitmap[0:15] = '{
+        16'b0000011111100000,
+        16'b0001111111111000,
+        16'b0011111111111100,
+        16'b0111111111111110,
+        16'b0111111111111110,
+        16'b1111111111111111,
+        16'b1111111111111111,
+        16'b1111011111101111,
+        16'b1111011111101111,
+        16'b1111111111111111,
+        16'b1111111111111111,
+        16'b1110011001100111,
+        16'b0000000000000000,
+        16'b0011000000110000,
+        16'b0011000000110000,
+        16'b0000000000000000
     };
 
-    vga_counters counters(.clk50(clk), .*);
+    // Bitmap for 16x16 Pac-Man (open mouth)
+    logic [15:0] pacman_bitmap[0:15] = '{
+        16'b0000011111100000,
+        16'b0001111111110000,
+        16'b0011111111111000,
+        16'b0111111111100000,
+        16'b0111111111000000,
+        16'b1111111110000000,
+        16'b1111111110000000,
+        16'b1111111111000000,
+        16'b1111111111100000,
+        16'b1111111111110000,
+        16'b0111111111111000,
+        16'b0011111111110000,
+        16'b0001111111100000,
+        16'b0000111111000000,
+        16'b0000011110000000,
+        16'b0000000000000000
+    };
 
-    // Register settings
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            bg_r <= 8'h0;
-            bg_g <= 8'h0;
-            bg_b <= 8'h80;
-            center_x <= 11'd320; 
-            center_y <= 10'd240; 
-            radius <= 25'd15; 
-        end else if (chipselect && write) begin
-            case (address)
-                3'h0: bg_r <= writedata[7:0];
-                3'h1: bg_g <= writedata[7:0];
-                3'h2: bg_b <= writedata[7:0];
-                3'h3: center_x <= writedata; 
-                3'h4: center_y <= writedata; 
-                3'h5: radius <= writedata;
-            endcase
-        end
-    end
+    // Include VGA sync generator (from lab or IP)
+    vga_counters counters(
+        .clk50(clk),
+        .hcount(hcount),
+        .vcount(vcount),
+        .video_on(video_on),
+        .VGA_CLK(VGA_CLK),
+        .VGA_HS(VGA_HS),
+        .VGA_VS(VGA_VS),
+        .VGA_BLANK_n(VGA_BLANK_n),
+        .VGA_SYNC_n(VGA_SYNC_n)
+    );
 
-    // Drawing logic
+    // Output color logic
     always_comb begin
-        // Default background
-        {VGA_R, VGA_G, VGA_B} = {bg_r, bg_g, bg_b};
+        VGA_R = 0;
+        VGA_G = 0;
+        VGA_B = 0;
 
-        if (VGA_BLANK_n) begin
-            int px = hcount[10:1];
-            int py = vcount;
-
-            // Walls (blue)
-            int row = py / TILE_SIZE;
-            int col = px / TILE_SIZE;
-            if (row < 5 && col < 5 && wall_map[row][col])
-                {VGA_R, VGA_G, VGA_B} = {8'h00, 8'h00, 8'hFF}; // Wall: blue
-
-            // Pac-Man (pink/magenta = your original ball color)
-            else if (((px - center_x) * (px - center_x) + (py - center_y) * (py - center_y)) <= (radius * radius))
-                {VGA_R, VGA_G, VGA_B} = {8'hFF, 8'hFF, 8'h00}; // Pac-Man: yellow
-
-            // Ghost 1
-            else if (((px - ghost1_x)*(px - ghost1_x) + (py - ghost1_y)*(py - ghost1_y)) <= 15*15)
-                {VGA_R, VGA_G, VGA_B} = {8'hFF, 8'h00, 8'h00}; // Ghost: red
-
-            // Ghost 2
-            else if (((px - ghost2_x)*(px - ghost2_x) + (py - ghost2_y)*(py - ghost2_y)) <= 15*15)
-                {VGA_R, VGA_G, VGA_B} = {8'h00, 8'hFF, 8'hFF}; // Ghost: cyan
+        if (video_on) begin
+            // Ghost drawing
+            if ((hcount >= ghost_x) && (hcount < ghost_x + 16) &&
+                (vcount >= ghost_y) && (vcount < ghost_y + 16)) begin
+                int gx = hcount - ghost_x;
+                int gy = vcount - ghost_y;
+                if (ghost_bitmap[gy][15 - gx])
+                    {VGA_R, VGA_G, VGA_B} = {8'hFF, 8'h00, 8'hFF};  // Purple
+            end
+            // Pac-Man drawing
+            else if ((hcount >= pacman_x) && (hcount < pacman_x + 16) &&
+                     (vcount >= pacman_y) && (vcount < pacman_y + 16)) begin
+                int px = hcount - pacman_x;
+                int py = vcount - pacman_y;
+                if (pacman_bitmap[py][15 - px])
+                    {VGA_R, VGA_G, VGA_B} = {8'hFF, 8'hFF, 8'h00};  // Yellow
+            end
         end
     end
 
