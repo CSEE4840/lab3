@@ -14,13 +14,17 @@ module vga_ball (
     // VGA sync counters
     wire [10:0] hcount;
     wire [9:0]  vcount;
-
-    wire [6:0] tile_x = hcount[10:3];
-    wire [5:0] tile_y = vcount[9:3];
+    wire [6:0] tile_x = hcount[10:3];  // pixel / 8
+    wire [5:0] tile_y = vcount[9:3];   // pixel / 8
     wire [2:0] tx = hcount[2:0];
     wire [2:0] ty = vcount[2:0];
+    
+    wire [12:0] tile_index;
+    assign tile_index = (tile_y << 6) + (tile_y << 4) + tile_x; // tile_y * 80 + tile_x
+    
+    wire [5:0] tile_id;
+    assign tile_id = tiles[tile_index];
 
-    wire [5:0] tile_id = tiles[tile_y * 80 + tile_x];
     // VGA sync generator instance
     vga_counters counters_inst (
         .clk50(clk),
