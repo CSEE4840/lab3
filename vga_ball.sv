@@ -1,3 +1,20 @@
+Error: Verilog HDL syntax error at vga_ball.sv(85) near text: "wire";  expecting "end". Check for and fix any syntax errors that appear immediately before or at the specified keyword. The Intel FPGA Knowledge Database contains many articles with specific details on how to resolve this error. Visit the Knowledge Database at https://www.altera.com/support/support-resources/knowledge-base/search.html and search for this specific error message number. File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 85
+Error: Verilog HDL syntax error at vga_ball.sv(86) near text: "wire";  expecting "end". Check for and fix any syntax errors that appear immediately before or at the specified keyword. The Intel FPGA Knowledge Database contains many articles with specific details on how to resolve this error. Visit the Knowledge Database at https://www.altera.com/support/support-resources/knowledge-base/search.html and search for this specific error message number. File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 86
+Error: Verilog HDL syntax error at vga_ball.sv(87) near text: "wire";  expecting "end". Check for and fix any syntax errors that appear immediately before or at the specified keyword. The Intel FPGA Knowledge Database contains many articles with specific details on how to resolve this error. Visit the Knowledge Database at https://www.altera.com/support/support-resources/knowledge-base/search.html and search for this specific error message number. File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 87
+Error: Verilog HDL syntax error at vga_ball.sv(88) near text: "wire";  expecting "end". Check for and fix any syntax errors that appear immediately before or at the specified keyword. The Intel FPGA Knowledge Database contains many articles with specific details on how to resolve this error. Visit the Knowledge Database at https://www.altera.com/support/support-resources/knowledge-base/search.html and search for this specific error message number. File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 88
+Error: Verilog HDL syntax error at vga_ball.sv(90) near text: "integer";  expecting "end". Check for and fix any syntax errors that appear immediately before or at the specified keyword. The Intel FPGA Knowledge Database contains many articles with specific details on how to resolve this error. Visit the Knowledge Database at https://www.altera.com/support/support-resources/knowledge-base/search.html and search for this specific error message number. File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 90
+Error: Verilog HDL syntax error at vga_ball.sv(91) near text: "wire";  expecting "end". Check for and fix any syntax errors that appear immediately before or at the specified keyword. The Intel FPGA Knowledge Database contains many articles with specific details on how to resolve this error. Visit the Knowledge Database at https://www.altera.com/support/support-resources/knowledge-base/search.html and search for this specific error message number. File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 91
+Error: Ignored design unit "vga_ball" at vga_ball.sv(7) due to previous errors File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 7
+Error: Ignored design unit "vga_counters" at vga_ball.sv(120) due to previous errors File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/vga_ball.sv Line: 120
+Warning: Quartus Prime Generate HDL Interface was unsuccessful. 8 errors, 0 warnings
+Error:     Peak virtual memory: 889 megabytes
+Error:     Processing ended: Mon Apr 28 17:17:07 2025
+Error:     Elapsed time: 00:00:01
+Error:     Total CPU time (on all processors): 00:00:00
+Error: No modules found when analyzing null.
+
+
+
 module vga_ball (
     input clk,
     input reset,
