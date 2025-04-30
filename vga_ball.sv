@@ -50,17 +50,7 @@ module vga_ball (
     reg [5:0] tile [0:4799];
 
     initial begin
-        `include "tile_init.vh"
-
-        // Example custom tile placements
-        tile[1226] = 6'd0;
-        for (i = 1227; i <= 1238; i = i + 1)
-            tile[i] = 6'd1;
-        tile[1239] = 6'd2;
-        tile[1240] = 6'd3;
-        for (i = 1241; i <= 1252; i = i + 1)
-            tile[i] = 6'd1;
-        tile[1253] = 6'd4;
+        `include "map.vh"
     end
 
     wire [12:0] tile_index = tile_y * 80 + tile_x;
@@ -80,6 +70,7 @@ module vga_ball (
     end
 
 endmodule
+
 
 
 module vga_ball (
