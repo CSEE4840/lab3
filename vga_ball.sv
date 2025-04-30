@@ -29,8 +29,8 @@ module vga_ball (
     // Tile addressing	
     integer i;
     wire [6:0] tile_x = hcount[10:4];
-    wire [5:0] tile_y = vcount[9:3];
-    wire [2:0] tx = hcount[3:1];
+    wire [6:0] tile_y = vcount[9:3];
+    wire [2:0] tx = hcount[2:0];
     wire [2:0] ty = vcount[2:0];
 
     // Tile bitmaps (initialized directly in declaration)
@@ -106,9 +106,9 @@ module vga_ball (
         VGA_B = 8'd0;
 
         if (bitmap_row[7 - tx]) begin
-            VGA_R = 8'hFF;
-            VGA_G = 8'hFF;
-            VGA_B = 8'h00; // Yellow tile pixel
+            VGA_R = 8'h00;
+            VGA_G = 8'h00;
+            VGA_B = 8'hFF;
         end
     end
 
