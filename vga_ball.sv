@@ -26,6 +26,90 @@ module vga_ball (
         .VGA_SYNC_n(VGA_SYNC_n)
     );
 
+    // Tile addressing
+    integer i;
+    wire [6:0] tile_x = hcount[10:4];
+    wire [6:0] tile_y = vcount[9:3];
+    wire [2:0] tx = hcount[2:0];
+    wire [2:0] ty = vcount[2:0];
+
+    // Tile bitmaps
+    logic [7:0] tile_bitmaps [37:0][7:0] = '{
+        '{8'b00001111, 8'b00110000, 8'b01000000, 8'b01000111, 8'b10001000, 8'b10010000, 8'b10010000, 8'b10010000},
+        '{8'b11111111, 8'b00000000, 8'b00000000, 8'b11111111, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000},
+        '{8'b11111111, 8'b00000000, 8'b00000000, 8'b11100000, 8'b00010000, 8'b00001000, 8'b00001000, 8'b00001000},
+        '{8'b11111111, 8'b00000000, 8'b00000000, 8'b00000111, 8'b00001000, 8'b00010000, 8'b00010000, 8'b00010000},
+        '{8'b11110000, 8'b00001100, 8'b00000010, 8'b11100010, 8'b00010001, 8'b00001001, 8'b00001001, 8'b00001001},
+        // ...(other tiles omitted for brevity)...
+        '{8'b00000001, 8'b00000001, 8'b00000001, 8'b11100001, 8'b00010001, 8'b00001001, 8'b00001001, 8'b00001001},
+        // tile 37: blank
+        '{8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000, 8'b00000000}
+    };
+
+    // Tile map (80x60 = 4800 entries)
+    reg [5:0] tile [0:4799];
+
+    initial begin
+        `include "tile_init.vh"
+
+        // Example custom tile placements
+        tile[1226] = 6'd0;
+        for (i = 1227; i <= 1238; i = i + 1)
+            tile[i] = 6'd1;
+        tile[1239] = 6'd2;
+        tile[1240] = 6'd3;
+        for (i = 1241; i <= 1252; i = i + 1)
+            tile[i] = 6'd1;
+        tile[1253] = 6'd4;
+    end
+
+    wire [12:0] tile_index = tile_y * 80 + tile_x;
+    wire [5:0] tile_id = tile[tile_index];
+    wire [7:0] bitmap_row = tile_bitmaps[tile_id][ty];
+
+    always @(*) begin
+        VGA_R = 8'd0;
+        VGA_G = 8'd0;
+        VGA_B = 8'd0;
+
+        if (bitmap_row[7 - tx]) begin
+            VGA_R = 8'd0;
+            VGA_G = 8'd0;
+            VGA_B = 8'd255;
+        end
+    end
+
+endmodule
+
+
+module vga_ball (
+    input clk,
+    input reset,
+    input [15:0] writedata,
+    input write,
+    input chipselect,
+    input [2:0] address,
+
+    output reg [7:0] VGA_R, VGA_G, VGA_B,
+    output VGA_CLK, VGA_HS, VGA_VS,
+    output VGA_BLANK_n, VGA_SYNC_n
+);
+
+    // VGA sync counters
+    wire [10:0] hcount;
+    wire [9:0]  vcount;
+
+    vga_counters counters_inst (
+        .clk50(clk),
+        .hcount(hcount),
+        .vcount(vcount),
+        .VGA_CLK(VGA_CLK),
+        .VGA_HS(VGA_HS),
+        .VGA_VS(VGA_VS),
+        .VGA_BLANK_n(VGA_BLANK_n),
+        .VGA_SYNC_n(VGA_SYNC_n)
+    );
+
     // Tile addressing	
     integer i;
     wire [6:0] tile_x = hcount[10:4];
