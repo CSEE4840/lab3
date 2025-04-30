@@ -73,6 +73,7 @@ endmodule
 
 
 
+
 module vga_ball (
     input clk,
     input reset,
