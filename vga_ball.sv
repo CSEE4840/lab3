@@ -1,7 +1,3 @@
-`include "pacman_directions.vh"
-`include "tiles.vh"
-`include "map.vh"
-
 module vga_ball (
     input clk,
     input reset,
@@ -34,17 +30,16 @@ module vga_ball (
     reg [9:0] pacman_x;
     reg [9:0] pacman_y;
 
-    // Ghost position
     wire [9:0] ghost_x = 300;
     wire [9:0] ghost_y = 240;
 
-    // Tile addressing
-    wire [6:0] tile_x = hcount[10:4];
-    wire [6:0] tile_y = vcount[9:3];
+    // Tile coordinates
+    wire [6:0] tile_x = hcount[10:4];  // 640 / 16 = 40 max
+    wire [6:0] tile_y = vcount[9:3];   // 480 / 8 = 60 max
     wire [2:0] tx = hcount[3:1];
     wire [2:0] ty = vcount[2:0];
 
-    // Write logic
+    // Write position logic
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             pacman_x <= 340;
@@ -57,19 +52,19 @@ module vga_ball (
         end
     end
 
-    // Tile map (80x60 = 4800 entries)
+    // Tile map: 80x60 = 4800 tiles
     reg [5:0] tile[0:4799];
     initial begin
         $readmemh("map.vh", tile);
     end
 
-    // Tile bitmaps (up to 36 tiles)
+    // Tile bitmaps: 37 tiles, each with 8 rows
     reg [7:0] tile_bitmaps[0:36][0:7];
     initial begin
         $readmemh("tiles.vh", tile_bitmaps);
     end
 
-    // Ghost sprite
+    // Ghost sprite (16x16)
     reg [15:0] ghost_bitmap[0:15];
     initial begin
         ghost_bitmap[ 0] = 16'b0000000000000000;
@@ -90,49 +85,65 @@ module vga_ball (
         ghost_bitmap[15] = 16'b0000000000000000;
     end
 
-    // Direction rotation
-    reg [1:0] pacman_dir = 2'd0;
-    reg [25:0] frame_counter;
+    // Pac-Man directional sprites (16x16)
+    reg [15:0] pacman_up    [0:15];
+    reg [15:0] pacman_right [0:15];
+    reg [15:0] pacman_down  [0:15];
+    reg [15:0] pacman_left  [0:15];
+
+    initial begin
+        $readmemh("pacman_up.vh",    pacman_up);
+        $readmemh("pacman_right.vh", pacman_right);
+        $readmemh("pacman_down.vh",  pacman_down);
+        $readmemh("pacman_left.vh",  pacman_left);
+    end
+
+    // Direction encoding
+    localparam DIR_UP    = 2'd0;
+    localparam DIR_RIGHT = 2'd1;
+    localparam DIR_DOWN  = 2'd2;
+    localparam DIR_LEFT  = 2'd3;
+
+    reg [1:0] pacman_dir;
+
+    // 1-second timer (assuming 50 MHz clock)
+    reg [25:0] timer_count;
+    wire one_sec_tick = (timer_count == 26'd49_999_999);
 
     always @(posedge clk or posedge reset) begin
-        if (reset) begin
-            pacman_dir <= 0;
-            frame_counter <= 0;
-        end else begin
-            frame_counter <= frame_counter + 1;
-            if (frame_counter == 26'd50000000) begin  // 1 second at 50 MHz
-                pacman_dir <= pacman_dir + 1;
-                frame_counter <= 0;
-            end
-        end
+        if (reset)
+            timer_count <= 26'd0;
+        else if (one_sec_tick)
+            timer_count <= 26'd0;
+        else
+            timer_count <= timer_count + 1;
     end
 
-    // Select bitmap based on direction
-    reg [15:0] pacman_bitmap[0:15];
-    always @(*) begin
-        case (pacman_dir)
-            2'd0: for (int i = 0; i < 16; i++) pacman_bitmap[i] = PACMAN_LEFT[i];
-            2'd1: for (int i = 0; i < 16; i++) pacman_bitmap[i] = PACMAN_UP[i];
-            2'd2: for (int i = 0; i < 16; i++) pacman_bitmap[i] = PACMAN_RIGHT[i];
-            2'd3: for (int i = 0; i < 16; i++) pacman_bitmap[i] = PACMAN_DOWN[i];
-        endcase
+    // Update direction every second
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            pacman_dir <= DIR_RIGHT; // Starting direction
+        else if (one_sec_tick)
+            pacman_dir <= pacman_dir + 1;
     end
 
-    // VGA rendering
+    // VGA Output logic
     always @(*) begin
-        VGA_R = 0;
-        VGA_G = 0;
-        VGA_B = 0;
+        VGA_R = 8'd0;
+        VGA_G = 8'd0;
+        VGA_B = 8'd0;
 
-        // Draw tile
+        // --- TILE RENDERING ---
         wire [12:0] tile_index = tile_y * 80 + tile_x;
         wire [5:0] tile_id = tile[tile_index];
         wire [7:0] bitmap_row = tile_bitmaps[tile_id][ty];
-        if (bitmap_row[7 - tx]) begin
+        wire pixel_on = bitmap_row[7 - tx];
+
+        if (pixel_on) begin
             VGA_B = 8'hFF;
         end
 
-        // Ghost render
+        // --- GHOST RENDERING ---
         if (hcount[10:1] >= ghost_x && hcount[10:1] < ghost_x + 16 &&
             vcount >= ghost_y && vcount < ghost_y + 16) begin
             if (ghost_bitmap[vcount - ghost_y][15 - (hcount[10:1] - ghost_x)]) begin
@@ -141,17 +152,36 @@ module vga_ball (
             end
         end
 
-        // Pac-Man render
+        // --- PACMAN RENDERING ---
         if (hcount[10:1] >= pacman_x && hcount[10:1] < pacman_x + 16 &&
             vcount >= pacman_y && vcount < pacman_y + 16) begin
-            if (pacman_bitmap[vcount - pacman_y][15 - (hcount[10:1] - pacman_x)]) begin
-                VGA_R = 8'hFF;
-                VGA_G = 8'hFF;
-            end
+            case (pacman_dir)
+                DIR_UP:
+                    if (pacman_up[vcount - pacman_y][15 - (hcount[10:1] - pacman_x)]) begin
+                        VGA_R = 8'hFF;
+                        VGA_G = 8'hFF;
+                    end
+                DIR_RIGHT:
+                    if (pacman_right[vcount - pacman_y][15 - (hcount[10:1] - pacman_x)]) begin
+                        VGA_R = 8'hFF;
+                        VGA_G = 8'hFF;
+                    end
+                DIR_DOWN:
+                    if (pacman_down[vcount - pacman_y][15 - (hcount[10:1] - pacman_x)]) begin
+                        VGA_R = 8'hFF;
+                        VGA_G = 8'hFF;
+                    end
+                DIR_LEFT:
+                    if (pacman_left[vcount - pacman_y][15 - (hcount[10:1] - pacman_x)]) begin
+                        VGA_R = 8'hFF;
+                        VGA_G = 8'hFF;
+                    end
+            endcase
         end
     end
 
 endmodule
+
 
 
 
