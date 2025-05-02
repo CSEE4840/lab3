@@ -59,7 +59,7 @@ module vga_ball (
     end
 
     // Tile bitmaps: 37 tiles, each with 8 rows
-    reg [7:0] tile_bitmaps[0:36][0:7];
+    reg [7:0] tile_bitmaps[0:36*8-1];
     initial begin
         $readmemh("tiles.vh", tile_bitmaps);
     end
@@ -127,17 +127,17 @@ module vga_ball (
             pacman_dir <= pacman_dir + 1;
     end
 
-    // VGA Output logic
+    // VGA Output logic // --- TILE RENDERING ---
+        wire [12:0] tile_index = tile_y * 80 + tile_x;
+        wire [5:0] tile_id = tile[tile_index];
+        wire [7:0] bitmap_row = tile_bitmaps[tile_id*8+ty];
+        wire pixel_on = bitmap_row[7 - tx];
     always @(*) begin
         VGA_R = 8'd0;
         VGA_G = 8'd0;
         VGA_B = 8'd0;
 
-        // --- TILE RENDERING ---
-        wire [12:0] tile_index = tile_y * 80 + tile_x;
-        wire [5:0] tile_id = tile[tile_index];
-        wire [7:0] bitmap_row = tile_bitmaps[tile_id][ty];
-        wire pixel_on = bitmap_row[7 - tx];
+       
 
         if (pixel_on) begin
             VGA_B = 8'hFF;
