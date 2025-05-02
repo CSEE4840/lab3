@@ -1,71 +1,73 @@
 // left
-assign pacman_left[0] = 16'h0000;
-assign pacman_left[1] = 16'h07C0;
-assign pacman_left[2] = 16'h1FF0;
-assign pacman_left[3] = 16'h3FF8;
-assign pacman_left[4] = 16'h3FF8;
-assign pacman_left[5] = 16'h0FFC;
-assign pacman_left[6] = 16'h01FC;
-assign pacman_left[7] = 16'h00FC;
-assign pacman_left[8] = 16'h01FC;
-assign pacman_left[9] = 16'h1FFC;
-assign pacman_left[10] = 16'h3FF8;
-assign pacman_left[11] = 16'h3FF8;
-assign pacman_left[12] = 16'h1FF0;
-assign pacman_left[13] = 16'h07C0;
-assign pacman_left[14] = 16'h0000;
-assign pacman_left[15] = 16'h0000;
+0000
+07C0
+1FF0
+3FF8
+3FF8
+0FFC
+01FC
+00FC
+01FC
+1FFC
+3FF8
+3FF8
+1FF0
+07C0
+0000
+0000
+
 
 // up
-assign pacman_up[0] = 16'h0000;
-assign pacman_up[1] = 16'h0000;
-assign pacman_up[2] = 16'h1830;
-assign pacman_up[3] = 16'h3878;
-assign pacman_up[4] = 16'h3C78;
-assign pacman_up[5] = 16'h7C7C;
-assign pacman_up[6] = 16'h7C7C;
-assign pacman_up[7] = 16'h7EFC;
-assign pacman_up[8] = 16'h7FFC;
-assign pacman_up[9] = 16'h7FFC;
-assign pacman_up[10] = 16'h3FF8;
-assign pacman_up[11] = 16'h3FF0;
-assign pacman_up[12] = 16'h1FC0;
-assign pacman_up[13] = 16'h07C0;
-assign pacman_up[14] = 16'h0000;
-assign pacman_up[15] = 16'h0000;
+0000
+0000
+1830
+3878
+3C78
+7C7C
+7C7C
+7EFC
+7FFC
+7FFC
+3FF8
+3FF0
+1FC0
+07C0
+0000
+0000
 
 // down
-assign pacman_down[0] = 16'h0000;
-assign pacman_down[1] = 16'h0000;
-assign pacman_down[2] = 16'h07C0;
-assign pacman_down[3] = 16'h1FE0;
-assign pacman_down[4] = 16'h3FF0;
-assign pacman_down[5] = 16'h3FF8;
-assign pacman_down[6] = 16'h7FFC;
-assign pacman_down[7] = 16'h7FFC;
-assign pacman_down[8] = 16'h7EFC;
-assign pacman_down[9] = 16'h7C7C;
-assign pacman_down[10] = 16'h7C7C;
-assign pacman_down[11] = 16'h3C78;
-assign pacman_down[12] = 16'h3878;
-assign pacman_down[13] = 16'h1830;
-assign pacman_down[14] = 16'h0000;
-assign pacman_down[15] = 16'h0000;
+0000
+0000
+07C0
+1FE0
+3FF0
+3FF8
+7FFC
+7FFC
+7EFC
+7C7C
+7C7C
+3C78
+3878
+1830
+0000
+0000
 
 // right
-assign pacman_right[0] = 16'h0000;
-assign pacman_right[1] = 16'h03E0;
-assign pacman_right[2] = 16'h0FF8;
-assign pacman_right[3] = 16'h1FFC;
-assign pacman_right[4] = 16'h1FFC;
-assign pacman_right[5] = 16'h3F80;
-assign pacman_right[6] = 16'h3F00;
-assign pacman_right[7] = 16'h3F80;
-assign pacman_right[8] = 16'h3FF0;
-assign pacman_right[9] = 16'h3FF8;
-assign pacman_right[10] = 16'h1FFC;
-assign pacman_right[11] = 16'h0FFC;
-assign pacman_right[12] = 16'h07F8;
-assign pacman_right[13] = 16'h03E0;
-assign pacman_right[14] = 16'h0000;
-assign pacman_right[15] = 16'h0000;
+0000
+03E0
+0FF8
+1FFC
+1FFC
+3F80
+3F00
+3F80
+3FF0
+3FF8
+1FFC
+0FFC
+07F8
+03E0
+0000
+0000
+
