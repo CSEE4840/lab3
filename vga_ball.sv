@@ -129,8 +129,17 @@ module vga_ball (
     end
 
     // Ghost shared sprite
-    reg [1:0] ghost_sprite[0:15][0:15];
-    initial $readmemh("ghost_left.vh", ghost_sprite); // shared across all 4 ghosts
+	reg [1:0] ghost_left [0:255];
+	reg [1:0] ghost_right[0:255];
+	reg [1:0] ghost_up   [0:255];
+	reg [1:0] ghost_down [0:255];
+	
+	initial begin
+	    $readmemh("ghost_left.vh",  ghost_left);
+	    $readmemh("ghost_right.vh", ghost_right);
+	    $readmemh("ghost_up.vh",    ghost_up);
+	    $readmemh("ghost_down.vh",  ghost_down);
+	end
 
     // VGA tile render
     wire [6:0] tile_x = hcount[10:4];
@@ -163,41 +172,56 @@ module vga_ball (
 
     // VGA pixel output with ghost overlay
     always @(*) begin
-        VGA_R = 0; VGA_G = 0; VGA_B = 0;
+    VGA_R = 0; VGA_G = 0; VGA_B = 0;
 
-        // Tile background
-        if (pixel_on) VGA_B = 8'hFF;
+    // Tile background
+    if (pixel_on)
+        VGA_B = 8'hFF;
 
-        // Ghosts
-        integer gi;
-        for (gi = 0; gi < 4; gi = gi + 1) begin
-            if (hcount[10:1] >= ghost_x[gi] && hcount[10:1] < ghost_x[gi] + 16 &&
-                vcount >= ghost_y[gi] && vcount < ghost_y[gi] + 16) begin
-                integer gx = hcount[10:1] - ghost_x[gi];
-                integer gy = vcount - ghost_y[gi];
-                case (ghost_sprite[gy][gx])
-                    2'b01: begin
-                        case (gi)
-                            0: begin VGA_R = 8'hFF; VGA_G = 0;     VGA_B = 0;     end // Red
-                            1: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 8'hFF; end // Pink
-                            2: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 0;     end // Orange
-                            3: begin VGA_R = 0;     VGA_G = 8'hFF; VGA_B = 8'hFF; end // Light Blue
-                        endcase
-                    end
-                    2'b10: begin VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 8'hFF; end // White
-                    2'b11: begin VGA_R = 0;     VGA_G = 0;     VGA_B = 8'h88; end // Dark Blue
-                endcase
-            end
-        end
+    // Ghosts
+    integer gi;
+    for (gi = 0; gi < 4; gi = gi + 1) begin
+        if (hcount[10:1] >= ghost_x[gi] && hcount[10:1] < ghost_x[gi] + 16 &&
+            vcount >= ghost_y[gi] && vcount < ghost_y[gi] + 16) begin
 
-        // Pac-Man (always yellow)
-        if (on_pacman) begin
-            case (pacman_pixel)
-                2'b01, 2'b10, 2'b11: begin VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 0; end
-                default: ;
+            integer gx = hcount[10:1] - ghost_x[gi];
+            integer gy = vcount - ghost_y[gi];
+            reg [1:0] ghost_pixel;
+
+            case (ghost_dir[gi])
+                DIR_UP:    ghost_pixel = ghost_up[gy * 16 + gx];
+                DIR_DOWN:  ghost_pixel = ghost_down[gy * 16 + gx];
+                DIR_LEFT:  ghost_pixel = ghost_left[gy * 16 + gx];
+                DIR_RIGHT: ghost_pixel = ghost_right[gy * 16 + gx];
+                default:   ghost_pixel = 2'b00;
+            endcase
+
+            case (ghost_pixel)
+                2'b01: begin
+                    case (gi)
+                        0: begin VGA_R = 8'hFF; VGA_G = 0;     VGA_B = 0;     end // Red
+                        1: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 8'hFF; end // Pink
+                        2: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 0;     end // Orange
+                        3: begin VGA_R = 0;     VGA_G = 8'hFF; VGA_B = 8'hFF; end // Light Blue
+                    endcase
+                end
+                2'b10: begin VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 8'hFF; end // White
+                2'b11: begin VGA_R = 0;     VGA_G = 0;     VGA_B = 8'h88; end // Dark Blue
             endcase
         end
     end
+
+    // Pac-Man (always yellow)
+    if (on_pacman) begin
+        case (pacman_pixel)
+            2'b01, 2'b10, 2'b11: begin
+                VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 0;
+            end
+            default: ;
+        endcase
+    end
+end
+
 endmodule
 
 
