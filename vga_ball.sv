@@ -78,7 +78,7 @@ module vga_ball (
     initial $readmemh("map.vh", tile);
 
     // Tile bitmaps
-    reg [7:0] tile_bitmaps[0:36*8-1];  // Extend if you use more than 36 tiles
+    reg [7:0] tile_bitmaps[0:8191];  // Extend if you use more than 36 tiles
     initial $readmemh("tiles.vh", tile_bitmaps);
 
     // Character bitmaps (8x16)
@@ -91,45 +91,52 @@ module vga_ball (
     // You can replace this with your own assignments
     // ----------------------------------------------
 
-    integer base_tile;
-    initial begin
-        base_tile = 980;  // top row tile index
+   integer i;
+integer base_tile;
+initial begin
+    $readmemh("characters.vh", char_bitmaps);
+    $readmemh("tiles.vh", tile_bitmaps);
+    $readmemh("map.vh", tile);
 
-        // Example: show "SCORE" using tile IDs 1000–1009
-        tile[base_tile + 0]  = 12'd1000; // 'S' top
-        tile[base_tile + 1]  = 12'd1002; // 'C' top
-        tile[base_tile + 2]  = 12'd1004; // 'O' top
-        tile[base_tile + 3]  = 12'd1006; // 'R' top
-        tile[base_tile + 4]  = 12'd1008; // 'E' top
+    // Display "SCORE" starting at tile index 980 (row 12, column 20)
+    base_tile = 980;
 
-        tile[base_tile + 80] = 12'd1001; // 'S' bottom
-        tile[base_tile + 81] = 12'd1003; // 'C' bottom
-        tile[base_tile + 82] = 12'd1005; // 'O' bottom
-        tile[base_tile + 83] = 12'd1007; // 'R' bottom
-        tile[base_tile + 84] = 12'd1009; // 'E' bottom
+    // Assign top and bottom tile IDs for each character
+    tile[base_tile + 0]  = 12'd1000; // 'S' top
+    tile[base_tile + 1]  = 12'd1002; // 'C' top
+    tile[base_tile + 2]  = 12'd1004; // 'O' top
+    tile[base_tile + 3]  = 12'd1006; // 'R' top
+    tile[base_tile + 4]  = 12'd1008; // 'E' top
 
-        for (i = 0; i < 8; i++) begin
-            // S = 18
-            tile_bitmaps[1000 * 8 + i] = char_bitmaps[18 * 16 + i];
-            tile_bitmaps[1001 * 8 + i] = char_bitmaps[18 * 16 + i + 8];
+    tile[base_tile + 80] = 12'd1001; // 'S' bottom
+    tile[base_tile + 81] = 12'd1003; // 'C' bottom
+    tile[base_tile + 82] = 12'd1005; // 'O' bottom
+    tile[base_tile + 83] = 12'd1007; // 'R' bottom
+    tile[base_tile + 84] = 12'd1009; // 'E' bottom
 
-            // C = 2
-            tile_bitmaps[1002 * 8 + i] = char_bitmaps[2 * 16 + i];
-            tile_bitmaps[1003 * 8 + i] = char_bitmaps[2 * 16 + i + 8];
+    for (i = 0; i < 8; i++) begin
+        // char_index('S') = 18
+        tile_bitmaps[1000 * 8 + i] = char_bitmaps[18 * 16 + i];     // S top
+        tile_bitmaps[1001 * 8 + i] = char_bitmaps[18 * 16 + i + 8]; // S bottom
 
-            // O = 14
-            tile_bitmaps[1004 * 8 + i] = char_bitmaps[14 * 16 + i];
-            tile_bitmaps[1005 * 8 + i] = char_bitmaps[14 * 16 + i + 8];
+        // char_index('C') = 2
+        tile_bitmaps[1002 * 8 + i] = char_bitmaps[2 * 16 + i];
+        tile_bitmaps[1003 * 8 + i] = char_bitmaps[2 * 16 + i + 8];
 
-            // R = 17
-            tile_bitmaps[1006 * 8 + i] = char_bitmaps[17 * 16 + i];
-            tile_bitmaps[1007 * 8 + i] = char_bitmaps[17 * 16 + i + 8];
+        // char_index('O') = 14
+        tile_bitmaps[1004 * 8 + i] = char_bitmaps[14 * 16 + i];
+        tile_bitmaps[1005 * 8 + i] = char_bitmaps[14 * 16 + i + 8];
 
-            // E = 4
-            tile_bitmaps[1008 * 8 + i] = char_bitmaps[4 * 16 + i];
-            tile_bitmaps[1009 * 8 + i] = char_bitmaps[4 * 16 + i + 8];
-        end
+        // char_index('R') = 17
+        tile_bitmaps[1006 * 8 + i] = char_bitmaps[17 * 16 + i];
+        tile_bitmaps[1007 * 8 + i] = char_bitmaps[17 * 16 + i + 8];
+
+        // char_index('E') = 4
+        tile_bitmaps[1008 * 8 + i] = char_bitmaps[4 * 16 + i];
+        tile_bitmaps[1009 * 8 + i] = char_bitmaps[4 * 16 + i + 8];
     end
+end
+
 
 
     // Pac-Man 2-bit sprites
