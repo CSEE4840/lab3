@@ -129,17 +129,25 @@ module vga_ball (
     end
 
     // Ghost shared sprite
-	reg [1:0] ghost_left [0:255];
-	reg [1:0] ghost_right[0:255];
-	reg [1:0] ghost_up   [0:255];
-	reg [1:0] ghost_down [0:255];
-	
-	initial begin
-	    $readmemh("ghost_left.vh",  ghost_left);
-	    $readmemh("ghost_right.vh", ghost_right);
-	    $readmemh("ghost_up.vh",    ghost_up);
-	    $readmemh("ghost_down.vh",  ghost_down);
-	end
+	localparam logic [1:0] GHOST_LEFT [0:15][0:15] = '{
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd1,2'd1,2'd0,2'd0},
+    '{2'd1,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd1,2'd1,2'd1,2'd0},
+    '{2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd0},
+    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd1,2'd1,2'd0},
+    '{2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}
+};
+
 
     // VGA tile render
     wire [6:0] tile_x = hcount[10:4];
@@ -189,10 +197,10 @@ module vga_ball (
             reg [1:0] ghost_pixel;
 
             case (ghost_dir[gi])
-                DIR_UP:    ghost_pixel = ghost_up[gy * 16 + gx];
-                DIR_DOWN:  ghost_pixel = ghost_down[gy * 16 + gx];
-                DIR_LEFT:  ghost_pixel = ghost_left[gy * 16 + gx];
-                DIR_RIGHT: ghost_pixel = ghost_right[gy * 16 + gx];
+                DIR_UP:    ghost_pixel = GHOST_UP[gy][gx];
+                DIR_DOWN:  ghost_pixel = GHOST_DOWN[gy][gx];
+                DIR_LEFT:  ghost_pixel = GHOST_LEFT[gy][gx];
+                DIR_RIGHT: ghost_pixel = GHOST_RIGHT[gy][gx];
                 default:   ghost_pixel = 2'b00;
             endcase
 
