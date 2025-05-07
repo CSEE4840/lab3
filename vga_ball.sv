@@ -109,38 +109,38 @@ always @(posedge clk or posedge reset) begin
         end
 
         // Auto-rotate only if no override
-        else if (second_counter == 50_000_000) begin
-    second_counter <= 0;
-    
-    if (score < 9999)
-        score <= score + 1;
+         else if (second_counter == 50_000_000) begin
+	    second_counter <= 0;
+	    
+	    if (score < 9999)
+		score <= score + 1;
 
-    // Update directions
-    pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
-    ghost_dir[0] <= ghost_dir[0] + 1;
-    ghost_dir[1] <= ghost_dir[1] + 1;
-    ghost_dir[2] <= ghost_dir[2] + 1;
-    ghost_dir[3] <= ghost_dir[3] + 1;
+	    // Update directions
+	    pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
+	    ghost_dir[0] <= ghost_dir[0] + 1;
+	    ghost_dir[1] <= ghost_dir[1] + 1;
+	    ghost_dir[2] <= ghost_dir[2] + 1;
+	    ghost_dir[3] <= ghost_dir[3] + 1;
 
-    // Recalculate digits
-    d3 = score / 1000;
-    d2 = (score % 1000) / 100;
-    d1 = (score % 100) / 10;
-    d0 = score % 10;
+	    // Recalculate digits
+	    d3 = score / 1000;
+	    d2 = (score % 1000) / 100;
+	    d1 = (score % 100) / 10;
+	    d0 = score % 10;
 
-    // Update tile_bitmaps for score
-    for (j = 0; j < 8; j = j + 1) begin
-        tile_bitmaps[100 * 8 + j] = char_bitmaps[(26 + d3) * 16 + j];
-        tile_bitmaps[101 * 8 + j] = char_bitmaps[(26 + d2) * 16 + j];
-        tile_bitmaps[102 * 8 + j] = char_bitmaps[(26 + d1) * 16 + j];
-        tile_bitmaps[103 * 8 + j] = char_bitmaps[(26 + d0) * 16 + j];
+	    // Update tile_bitmaps for score
+	    for (j = 0; j < 8; j = j + 1) begin
+		tile_bitmaps[100 * 8 + j] = char_bitmaps[(26 + d3) * 16 + j];
+		tile_bitmaps[101 * 8 + j] = char_bitmaps[(26 + d2) * 16 + j];
+		tile_bitmaps[102 * 8 + j] = char_bitmaps[(26 + d1) * 16 + j];
+		tile_bitmaps[103 * 8 + j] = char_bitmaps[(26 + d0) * 16 + j];
 
-        tile_bitmaps[104 * 8 + j] = char_bitmaps[(26 + d3) * 16 + j + 8];
-        tile_bitmaps[105 * 8 + j] = char_bitmaps[(26 + d2) * 16 + j + 8];
-        tile_bitmaps[106 * 8 + j] = char_bitmaps[(26 + d1) * 16 + j + 8];
-        tile_bitmaps[107 * 8 + j] = char_bitmaps[(26 + d0) * 16 + j + 8];
-    end
-end
+		tile_bitmaps[104 * 8 + j] = char_bitmaps[(26 + d3) * 16 + j + 8];
+		tile_bitmaps[105 * 8 + j] = char_bitmaps[(26 + d2) * 16 + j + 8];
+		tile_bitmaps[106 * 8 + j] = char_bitmaps[(26 + d1) * 16 + j + 8];
+		tile_bitmaps[107 * 8 + j] = char_bitmaps[(26 + d0) * 16 + j + 8];
+	    end
+	end
 
 		pac_tile_x = pacman_x[9:3];
 		pac_tile_y = pacman_y[9:3];
@@ -202,7 +202,7 @@ end
 	    tile[base_score_tile + 81] = 12'd105;
 	    tile[base_score_tile + 82] = 12'd106;
 	    tile[base_score_tile + 83] = 12'd107;
-	
+
     end
 
     // Pac-Man sprites
@@ -373,7 +373,6 @@ always @(*) begin
 end
 
 endmodule
-
 
 
 
