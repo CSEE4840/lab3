@@ -1,11 +1,3 @@
-Error (10028): Can't resolve multiple constant drivers for net "pacman_dir[2]" at vga_ball.sv(73) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 73
-Error (10029): Constant driver at vga_ball.sv(55) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 55
-Error (10028): Can't resolve multiple constant drivers for net "pacman_dir[1]" at vga_ball.sv(73) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 73
-Error (10028): Can't resolve multiple constant drivers for net "pacman_dir[0]" at vga_ball.sv(73) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 73
-Error (12152): Can't elaborate user hierarchy "soc_system:soc_system0|vga_ball:vga_ball_0" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/soc_system.v Line: 333
-
-
-
 module vga_ball (
     input clk,
     input reset,
@@ -35,12 +27,14 @@ module vga_ball (
     );
 
     // Direction encoding
-    localparam DIR_UP = 2'd0, DIR_RIGHT = 2'd1, DIR_DOWN = 2'd2, DIR_LEFT = 2'd3;
+    localparam DIR_UP = 3'd0, DIR_RIGHT = 3'd1, DIR_DOWN = 3'd2, DIR_LEFT = 3'd3, DIR_EAT = 3'd4;
 
     // Pac-Man position and direction
     reg [9:0] pacman_x;
     reg [9:0] pacman_y;
-    reg [1:0] pacman_dir;
+    reg [2:0] pacman_dir;
+    reg [12:0] trigger_tile_index;
+
 
     // Ghosts: 4 ghosts
     reg [9:0] ghost_x[0:3];
@@ -49,52 +43,94 @@ module vga_ball (
 
     // 1Hz auto-rotate
     reg [25:0] second_counter;
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
-            second_counter <= 0;
-            pacman_dir <= DIR_RIGHT;
+	wire [6:0] pac_tile_x;
+	wire [6:0] pac_tile_y;
+	wire [12:0] pacman_tile_index;
+    reg [11:0] tile[0:4799];
+    reg [7:0] tile_bitmaps[0:8191];
+    reg [7:0] char_bitmaps[0:575];
+    reg [7:0] score;
 
-            ghost_x[0] <= 100; ghost_y[0] <= 100; ghost_dir[0] <= DIR_LEFT;
-            ghost_x[1] <= 200; ghost_y[1] <= 100; ghost_dir[1] <= DIR_RIGHT;
-            ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
-            ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
+    integer i;
+    integer base_tile;
+    integer d0, d1, d2, d3;
+    integer base_score_tile;
+    reg [31:0] pacman_up[0:15], pacman_right[0:15], pacman_down[0:15], pacman_left[0:15], pacman_eat[0:15]; 
+   wire [6:0] tile_x = hcount[10:4];
+    wire [6:0] tile_y = vcount[9:3];
+    wire [2:0] tx = hcount[3:1];
+    wire [2:0] ty = vcount[2:0];
 
-        end else begin
-            second_counter <= second_counter + 1;
-            if (second_counter == 50_000_000) begin
-                second_counter <= 0;
-                pacman_dir <= pacman_dir + 1;
+    wire [12:0] tile_index = tile_y * 80 + tile_x;
+    wire [11:0] tile_id = tile[tile_index];
+    wire [7:0] bitmap_row = tile_bitmaps[tile_id * 8 + ty];
+    wire pixel_on = bitmap_row[7 - tx];
 
-                ghost_dir[0] <= ghost_dir[0] + 1;
-                ghost_dir[1] <= ghost_dir[1] + 1;
-                ghost_dir[2] <= ghost_dir[2] + 1;
-                ghost_dir[3] <= ghost_dir[3] + 1;
-            end
-        end
-    end
+    // Pac-Man render
+    wire [3:0] pacman_x16 = hcount[10:1] - pacman_x;
+    wire [3:0] pacman_y16 = vcount - pacman_y;
+    wire on_pacman = (hcount[10:1] >= pacman_x && hcount[10:1] < pacman_x + 16 &&
+                      vcount >= pacman_y && vcount < pacman_y + 16);
 
-    // Software write
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
-            pacman_x <= 340;
-            pacman_y <= 240;
-        end else if (chipselect && write) begin
+    reg [31:0] pacman_row;
+        integer gi;
+    integer gx;
+    integer gy;
+    reg [1:0] ghost_pixel;
+    reg [1:0] pacman_pixel;
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        second_counter <= 0;
+        pacman_x <= 340;
+        pacman_y <= 240;
+        pacman_dir <= DIR_RIGHT;
+	score <= 0;
+        ghost_x[0] <= 100; ghost_y[0] <= 100; ghost_dir[0] <= DIR_LEFT;
+        ghost_x[1] <= 200; ghost_y[1] <= 100; ghost_dir[1] <= DIR_RIGHT;
+        ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
+        ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
+
+    end else begin
+        second_counter <= second_counter + 1;
+
+        // Handle software writes
+        if (chipselect && write) begin
             case (address)
                 5'd0: begin
                     pacman_x <= writedata[7:0];
                     pacman_y <= writedata[15:8];
                 end
-                5'd3: pacman_dir <= writedata[1:0];
+                5'd3: pacman_dir <= writedata[2:0];
+		5'd4: trigger_tile_index <= writedata[12:0];  
+
             endcase
         end
+
+        // Auto-rotate only if no override
+        else if (second_counter == 50_000_000) begin
+            second_counter <= 0;
+
+            pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
+
+            ghost_dir[0] <= ghost_dir[0] + 1;
+            ghost_dir[1] <= ghost_dir[1] + 1;
+            ghost_dir[2] <= ghost_dir[2] + 1;
+            ghost_dir[3] <= ghost_dir[3] + 1;
+        end
+		pac_tile_x = pacman_x[9:3];
+		pac_tile_y = pacman_y[9:3];
+		pacman_tile_index = pac_tile_y * 80 + pac_tile_x;
+		
+		if (pacman_tile_index == trigger_tile_index) begin
+		    tile[trigger_tile_index] <= 12'h03;
+		end
+
     end
+end
+
 
     // Tile and character memory
-    reg [11:0] tile[0:4799];
-    reg [7:0] tile_bitmaps[0:8191];
-    reg [7:0] char_bitmaps[0:575];
-    integer i;
-integer base_tile;
+    
     initial begin
         $readmemh("map.vh", tile);
         $readmemh("tiles.vh", tile_bitmaps);
@@ -126,174 +162,202 @@ integer base_tile;
             tile_bitmaps[1008 * 8 + i] = char_bitmaps[4  * 16 + i];
             tile_bitmaps[1009 * 8 + i] = char_bitmaps[4  * 16 + i + 8];
         end
+	    d3 = score / 1000;
+	    d2 = (score % 1000) / 100;
+	    d1 = (score % 100) / 10;
+	    d0 = score % 10;
+		
+	    base_score_tile = 1000;
+		
+	    tile[base_score_tile + 0]  = 12'd1010;
+	    tile[base_score_tile + 1]  = 12'd1011;
+   	    tile[base_score_tile + 2]  = 12'd1012;
+	    tile[base_score_tile + 3]  = 12'd1013;
+	    tile[base_score_tile + 80] = 12'd1014;
+	    tile[base_score_tile + 81] = 12'd1015;
+	    tile[base_score_tile + 82] = 12'd1016;
+	    tile[base_score_tile + 83] = 12'd1017;
+		
+	    for (i = 0; i < 8; i++) begin
+		tile_bitmaps[1010*8 + i] = char_bitmaps[(48 + d3)*16 + i];
+		tile_bitmaps[1011*8 + i] = char_bitmaps[(48 + d2)*16 + i];
+		tile_bitmaps[1012*8 + i] = char_bitmaps[(48 + d1)*16 + i];
+		tile_bitmaps[1013*8 + i] = char_bitmaps[(48 + d0)*16 + i];
+		
+		tile_bitmaps[1014*8 + i] = char_bitmaps[(48 + d3)*16 + i + 8];
+		tile_bitmaps[1015*8 + i] = char_bitmaps[(48 + d2)*16 + i + 8];
+		tile_bitmaps[1016*8 + i] = char_bitmaps[(48 + d1)*16 + i + 8];
+		tile_bitmaps[1017*8 + i] = char_bitmaps[(48 + d0)*16 + i + 8];
+	end
+
     end
 
     // Pac-Man sprites
-    reg [31:0] pacman_up[0:15], pacman_right[0:15], pacman_down[0:15], pacman_left[0:15];
+    
     initial begin
         $readmemh("pacman_up.vh",    pacman_up);
         $readmemh("pacman_right.vh", pacman_right);
         $readmemh("pacman_down.vh",  pacman_down);
         $readmemh("pacman_left.vh",  pacman_left);
+	$readmemh("pacman_eat.vh",  pacman_eat);
     end
 
     // Ghost shared sprite
 	localparam logic [1:0] GHOST_LEFT [0:15][0:15] = '{
     '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd1,2'd1,2'd0,2'd0},
-    '{2'd1,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd2,2'd1,2'd3,2'd3,2'd1,2'd1,2'd1,2'd0},
-    '{2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd0},
-    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
-    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
-    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
-    '{2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
-    '{2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd1,2'd1,2'd0},
-    '{2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd3,2'd3,2'd2,2'd2,2'd1,2'd3,2'd3,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd1,2'd1,2'd3,2'd3,2'd2,2'd2,2'd1,2'd3,2'd3,2'd2,2'd2,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd0},
     '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}
 };
 
-	localparam logic [1:0] GHOST_UP [0:15][0:15] = '{
-    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd1,2'd0},
-    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}
-};
 	localparam logic [1:0] GHOST_RIGHT [0:15][0:15] = '{
     '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd0,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd2,2'd2,2'd3,2'd3,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}
+};
+	localparam logic [1:0] GHOST_UP [0:15][0:15] = '{
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
     '{2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
     '{2'd0,2'd0,2'd0,2'd1,2'd3,2'd3,2'd1,2'd1,2'd1,2'd3,2'd3,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd3,2'd3,2'd2,2'd1,2'd2,2'd3,2'd3,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd1,2'd0},
+    '{2'd0,2'd0,2'd1,2'd2,2'd3,2'd3,2'd2,2'd1,2'd2,2'd3,2'd3,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd0},
     '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}
 };
 
 	localparam logic [1:0] GHOST_DOWN [0:15][0:15] = '{
-    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+     '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0},
     '{2'd0,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd3,2'd3,2'd2,2'd1,2'd2,2'd3,2'd3,2'd2,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd3,2'd3,2'd1,2'd1,2'd3,2'd3,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0},
-    '{2'd0,2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
-    '{2'd0,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd1,2'd0},
+    '{2'd0,2'd0,2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd2,2'd2,2'd1,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd0,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd2,2'd2,2'd2,2'd2,2'd1,2'd1,2'd0,2'd0},
+    '{2'd0,2'd1,2'd1,2'd2,2'd3,2'd3,2'd2,2'd1,2'd2,2'd3,2'd3,2'd2,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd3,2'd3,2'd1,2'd1,2'd1,2'd3,2'd3,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd1,2'd0,2'd1,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd1,2'd0,2'd1,2'd1,2'd0},
+    '{2'd0,2'd1,2'd0,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd1,2'd1,2'd0,2'd0,2'd0,2'd1,2'd0},
     '{2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0,2'd0}
 };
 
 
 
     // VGA tile render
-    wire [6:0] tile_x = hcount[10:4];
-    wire [6:0] tile_y = vcount[9:3];
-    wire [2:0] tx = hcount[3:1];
-    wire [2:0] ty = vcount[2:0];
-
-    wire [12:0] tile_index = tile_y * 80 + tile_x;
-    wire [11:0] tile_id = tile[tile_index];
-    wire [7:0] bitmap_row = tile_bitmaps[tile_id * 8 + ty];
-    wire pixel_on = bitmap_row[7 - tx];
-
-    // Pac-Man render
-    wire [3:0] pacman_x16 = hcount[10:1] - pacman_x;
-    wire [3:0] pacman_y16 = vcount - pacman_y;
-    wire on_pacman = (hcount[10:1] >= pacman_x && hcount[10:1] < pacman_x + 16 &&
-                      vcount >= pacman_y && vcount < pacman_y + 16);
-
-    reg [31:0] pacman_row;
-        integer gi;
-    integer gx;
-    integer gy;
-    reg [1:0] ghost_pixel;
-reg [1:0] pacman_pixel;
+   
     // VGA pixel output with ghost overlay
-    always @(*) begin
-        VGA_R = 0;
-        VGA_G = 0;
-        VGA_B = 0;
+always @(*) begin
+    // Default: black screen
+    VGA_R = 0;
+    VGA_G = 0;
+    VGA_B = 0;
 
-        // Tile background
-        if (pixel_on)
-            VGA_B = 8'hFF;
+    // -------------------------
+    // 1. Background tile color
+    // -------------------------
+    if (pixel_on) begin
+        if (tile_id == 12'h0A || (tile_index >= 980 && tile_index <= 980 + 84))
+            {VGA_R, VGA_G, VGA_B} = 24'hFFFFFF;  // white
+        else
+            VGA_B = 8'hFF;  // blue background
+    end
 
-        // Ghosts
-        for (gi = 0; gi < 4; gi = gi + 1) begin
-            if (hcount[10:1] >= ghost_x[gi] && hcount[10:1] < ghost_x[gi] + 16 &&
-                vcount           >= ghost_y[gi] && vcount           < ghost_y[gi] + 16) begin
+    // -------------------------
+    // 2. Pac-Man pixel row decode (MUST BE OUTSIDE case expression)
+    // -------------------------
+    pacman_row = 32'b0;
+    if (vcount >= pacman_y && vcount < pacman_y + 16) begin
+        case (pacman_dir)
+            DIR_UP:    pacman_row = pacman_up[vcount - pacman_y];
+            DIR_RIGHT: pacman_row = pacman_right[vcount - pacman_y];
+            DIR_DOWN:  pacman_row = pacman_down[vcount - pacman_y];
+            DIR_LEFT:  pacman_row = pacman_left[vcount - pacman_y];
+            DIR_EAT:   pacman_row = pacman_eat[vcount - pacman_y];
+        endcase
+    end
 
-                // compute local coordinates
-                gx = hcount[10:1] - ghost_x[gi];
-                gy = vcount           - ghost_y[gi];
-
-                // pick the right row/column from the ghost sprite
-                case (ghost_dir[gi])
-                    DIR_UP:    ghost_pixel = GHOST_UP[gy][gx];
-                    DIR_DOWN:  ghost_pixel = GHOST_DOWN[gy][gx];
-                    DIR_LEFT:  ghost_pixel = GHOST_LEFT[gy][gx];
-                    DIR_RIGHT: ghost_pixel = GHOST_RIGHT[gy][gx];
-                    default:   ghost_pixel = 2'b00;
-                endcase
-
-                // overlay the ghost pixel
-                case (ghost_pixel)
-                    2'b01: begin
-                        case (gi)
-                            0: begin VGA_R = 8'hFF; VGA_G = 0;     VGA_B = 0;     end // Red
-                            1: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 8'hFF; end // Pink
-                            2: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 0;     end // Orange
-                            3: begin VGA_R = 0;     VGA_G = 8'hFF; VGA_B = 8'hFF; end // Light Blue
-                        endcase
-                    end
-                    2'b10: begin VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 8'hFF; end // White
-                    2'b11: begin VGA_R = 0;     VGA_G = 0;     VGA_B = 8'h88; end // Dark Blue
-                endcase
-            end
+    // -------------------------
+    // 3. Pac-Man overlay
+    // -------------------------
+    if (hcount[10:1] >= pacman_x && hcount[10:1] < pacman_x + 16 &&
+        vcount >= pacman_y && vcount < pacman_y + 16) begin
+        if (pacman_row[15 - (hcount[10:1] - pacman_x)]) begin
+            VGA_R = 8'hFF;
+            VGA_G = 8'hFF;
+            VGA_B = 8'h00; // Yellow Pac-Man
         end
+    end
 
-        // Pac-Man (always yellow)
-        if (on_pacman) begin
-            case (pacman_pixel)
-                2'b01, 2'b10, 2'b11: begin
-                    VGA_R = 8'hFF;
-                    VGA_G = 8'hFF;
-                    VGA_B = 0;
+    // -------------------------
+    // 4. Ghost overlay
+    // -------------------------
+    for (gi = 0; gi < 4; gi = gi + 1) begin
+        if (hcount[10:1] >= ghost_x[gi] && hcount[10:1] < ghost_x[gi] + 16 &&
+            vcount >= ghost_y[gi] && vcount < ghost_y[gi] + 16) begin
+
+            gx = hcount[10:1] - ghost_x[gi];
+            gy = vcount - ghost_y[gi];
+
+            case (ghost_dir[gi])
+                DIR_UP:    ghost_pixel = GHOST_UP[gy][gx];
+                DIR_DOWN:  ghost_pixel = GHOST_DOWN[gy][gx];
+                DIR_LEFT:  ghost_pixel = GHOST_LEFT[gy][gx];
+                DIR_RIGHT: ghost_pixel = GHOST_RIGHT[gy][gx];
+                default:   ghost_pixel = 2'b00;
+            endcase
+
+            case (ghost_pixel)
+                2'b01: begin
+                    case (gi)
+                        0: begin VGA_R = 8'hFF; VGA_G = 0;     VGA_B = 0;     end // Red
+                        1: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 8'hFF; end // Pink
+                        2: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 0;     end // Orange
+                        3: begin VGA_R = 0;     VGA_G = 8'hFF; VGA_B = 8'hFF; end // Light Blue
+                    endcase
                 end
-                default: ;
+                2'b10: begin VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 8'hFF; end // White
+                2'b11: begin VGA_R = 0;     VGA_G = 0;     VGA_B = 8'h88; end // Dark Blue
             endcase
         end
     end
+end
 
 endmodule
 
