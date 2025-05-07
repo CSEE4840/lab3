@@ -52,6 +52,8 @@ module vga_ball (
     reg [7:0] score;
 
     integer i;
+    integer j; 
+    reg [6:0] score_tile_id_base = 7'd100;
     integer base_tile;
     integer d0, d1, d2, d3;
     integer base_score_tile;
@@ -61,7 +63,7 @@ module vga_ball (
     wire [2:0] tx = hcount[3:1];
     wire [2:0] ty = vcount[2:0];
 
-    wire [12:0] tile_index = tile_y * 80 + tile_x;
+    wire [12:0] tile_index = (tile_y <<6) + (tile_y<<4) + tile_x;
     wire [11:0] tile_id = tile[tile_index];
     wire [7:0] bitmap_row = tile_bitmaps[tile_id * 8 + ty];
     wire pixel_on = bitmap_row[7 - tx];
@@ -109,7 +111,9 @@ always @(posedge clk or posedge reset) begin
         // Auto-rotate only if no override
         else if (second_counter == 50_000_000) begin
             second_counter <= 0;
-
+	    if (score <9999) 
+		score <= score +1;
+	
             pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
 
             ghost_dir[0] <= ghost_dir[0] + 1;
@@ -169,25 +173,23 @@ end
 		
 	    base_score_tile = 1000;
 		
-	    tile[base_score_tile + 0]  = 12'd1010;
-	    tile[base_score_tile + 1]  = 12'd1011;
-   	    tile[base_score_tile + 2]  = 12'd1012;
-	    tile[base_score_tile + 3]  = 12'd1013;
-	    tile[base_score_tile + 80] = 12'd1014;
-	    tile[base_score_tile + 81] = 12'd1015;
-	    tile[base_score_tile + 82] = 12'd1016;
-	    tile[base_score_tile + 83] = 12'd1017;
-		
-	    for (i = 0; i < 8; i++) begin
-		tile_bitmaps[1010*8 + i] = char_bitmaps[(48 + d3)*16 + i];
-		tile_bitmaps[1011*8 + i] = char_bitmaps[(48 + d2)*16 + i];
-		tile_bitmaps[1012*8 + i] = char_bitmaps[(48 + d1)*16 + i];
-		tile_bitmaps[1013*8 + i] = char_bitmaps[(48 + d0)*16 + i];
-		
-		tile_bitmaps[1014*8 + i] = char_bitmaps[(48 + d3)*16 + i + 8];
-		tile_bitmaps[1015*8 + i] = char_bitmaps[(48 + d2)*16 + i + 8];
-		tile_bitmaps[1016*8 + i] = char_bitmaps[(48 + d1)*16 + i + 8];
-		tile_bitmaps[1017*8 + i] = char_bitmaps[(48 + d0)*16 + i + 8];
+	    tile[base_score_tile + 0]  = 12'd100;
+	    tile[base_score_tile + 1]  = 12'd101;
+   	    tile[base_score_tile + 2]  = 12'd102;
+	    tile[base_score_tile + 3]  = 12'd103;
+	    tile[base_score_tile + 80] = 12'd104;
+	    tile[base_score_tile + 81] = 12'd105;
+	    tile[base_score_tile + 82] = 12'd106;
+	    tile[base_score_tile + 83] = 12'd107;
+	for (j = 0; j < 8; j++) begin
+            tile_bitmaps[100 * 8 + j] = char_bitmaps[(26 + d3)* 16 + j];
+            tile_bitmaps[101 * 8 + j] = char_bitmaps[(26 + d2)* 16 + j];
+            tile_bitmaps[102 * 8 + j] = char_bitmaps[(26 + d1)* 16 + j];
+            tile_bitmaps[103 * 8 + j] = char_bitmaps[(26 + d0)* 16 + j];
+            tile_bitmaps[104 * 8 + j] = char_bitmaps[(26 + d3)* 16 + j+8];
+            tile_bitmaps[105 * 8 + j] = char_bitmaps[(26 + d2)* 16 + j+8];
+            tile_bitmaps[106 * 8 + j] = char_bitmaps[(26 + d1)* 16 + j+8];
+            tile_bitmaps[107 * 8 + j] = char_bitmaps[(26 + d0)* 16 + j+8];
 	end
 
     end
@@ -296,7 +298,7 @@ always @(*) begin
         if (tile_id == 12'h0A || (tile_index >= 980 && tile_index <= 980 + 84))
             {VGA_R, VGA_G, VGA_B} = 24'hFFFFFF;  // white
         else
-            VGA_B = 8'hFF;  // blue background
+        	VGA_B = 8'hFF;  // blue background
     end
 
     // -------------------------
