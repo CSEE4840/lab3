@@ -1,3 +1,11 @@
+Error (10028): Can't resolve multiple constant drivers for net "pacman_dir[2]" at vga_ball.sv(73) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 73
+Error (10029): Constant driver at vga_ball.sv(55) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 55
+Error (10028): Can't resolve multiple constant drivers for net "pacman_dir[1]" at vga_ball.sv(73) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 73
+Error (10028): Can't resolve multiple constant drivers for net "pacman_dir[0]" at vga_ball.sv(73) File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/vga_ball.sv Line: 73
+Error (12152): Can't elaborate user hierarchy "soc_system:soc_system0|vga_ball:vga_ball_0" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/soc_system.v Line: 333
+
+
+
 module vga_ball (
     input clk,
     input reset,
