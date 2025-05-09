@@ -89,64 +89,87 @@ module vga_ball (
         tile[base_tile + 84] = 12'd42;  // E lower
     end
 
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
+    reg [12:0] demo_index;
+
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        second_counter <= 0;
+        pacman_x <= 340;
+        pacman_y <= 240;
+        pacman_dir <= DIR_RIGHT;
+        score <= 0;
+        demo_index <= 13'd4088;
+
+        ghost_x[0] <= 100; ghost_y[0] <= 100; ghost_dir[0] <= DIR_LEFT;
+        ghost_x[1] <= 200; ghost_y[1] <= 100; ghost_dir[1] <= DIR_RIGHT;
+        ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
+        ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
+
+    end else begin
+        second_counter <= second_counter + 1;
+
+        // Handle software writes
+        if (chipselect && write) begin
+            case (address)
+                5'd0: begin
+                    pacman_x <= writedata[7:0];
+                    pacman_y <= writedata[15:8];
+                end
+                5'd3: pacman_dir <= writedata[2:0];
+                5'd4: trigger_tile_index <= writedata[12:0];
+            endcase
+        end
+
+        // Every second
+        else if (second_counter == 50_000_000) begin
             second_counter <= 0;
-            pacman_x <= 340;
-            pacman_y <= 240;
-            pacman_dir <= DIR_RIGHT;
-            score <= 0;
 
-            ghost_x[0] <= 100; ghost_y[0] <= 100; ghost_dir[0] <= DIR_LEFT;
-            ghost_x[1] <= 200; ghost_y[1] <= 100; ghost_dir[1] <= DIR_RIGHT;
-            ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
-            ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
-
-        end else begin
-            second_counter <= second_counter + 1;
-
-            if (chipselect && write) begin
-                case (address)
-                    5'd0: begin
-                        pacman_x <= writedata[7:0];
-                        pacman_y <= writedata[15:8];
-                    end
-                    5'd3: pacman_dir <= writedata[2:0];
-                    5'd4: trigger_tile_index <= writedata[12:0];
-                endcase
-            end else if (second_counter == 50_000_000) begin
-                second_counter <= 0;
-                if (score < 9999)
-                    score <= score + 1;
-
-                pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
-                ghost_dir[0] <= ghost_dir[0] + 1;
-                ghost_dir[1] <= ghost_dir[1] + 1;
-                ghost_dir[2] <= ghost_dir[2] + 1;
-                ghost_dir[3] <= ghost_dir[3] + 1;
-
-                d3 = score / 1000;
-                d2 = (score % 1000) / 100;
-                d1 = (score % 100) / 10;
-                d0 = score % 10;
-
-                base_score_tile = 4646;
-
-                // Use digit tile IDs directly from tiles.vh
-                tile[base_score_tile + 0]  = 12'd(89 + d3 * 2);     // upper
-                tile[base_score_tile + 1]  = 12'd(89 + d2 * 2);
-                tile[base_score_tile + 2]  = 12'd(89 + d1 * 2);
-                tile[base_score_tile + 3]  = 12'd(89 + d0 * 2);
-                tile[base_score_tile + 80] = 12'd(89 + d3 * 2 + 1); // lower
-                tile[base_score_tile + 81] = 12'd(89 + d2 * 2 + 1);
-                tile[base_score_tile + 82] = 12'd(89 + d1 * 2 + 1);
-                tile[base_score_tile + 83] = 12'd(89 + d0 * 2 + 1);
+            // Auto-increment demo tile from 4088 to 4130 using tile ID 37 ('A' upper)
+            if (demo_index <= 13'd4130) begin
+                tile[demo_index] <= 12'd37;
+                demo_index <= demo_index + 1;
             end
 
-            if (pacman_tile_index == trigger_tile_index)
-                tile[trigger_tile_index] <= 12'h03;
+            // Increase score
+            if (score < 9999)
+                score <= score + 1;
+
+            // Rotate directions
+            pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
+            ghost_dir[0] <= ghost_dir[0] + 1;
+            ghost_dir[1] <= ghost_dir[1] + 1;
+            ghost_dir[2] <= ghost_dir[2] + 1;
+            ghost_dir[3] <= ghost_dir[3] + 1;
+
+            // Recalculate digits
+            d3 = score / 1000;
+            d2 = (score % 1000) / 100;
+            d1 = (score % 100) / 10;
+            d0 = score % 10;
+
+            // Use digit tile IDs directly from tiles.vh (starting from tile ID 89)
+            base_score_tile = 1078;
+            tile[base_score_tile + 0]  = 89 + d3 * 2;
+            tile[base_score_tile + 1]  = 89 + d2 * 2;
+            tile[base_score_tile + 2]  = 89 + d1 * 2;
+            tile[base_score_tile + 3]  = 89 + d0 * 2;
+            tile[base_score_tile + 80] = 89 + d3 * 2 + 1;
+            tile[base_score_tile + 81] = 89 + d2 * 2 + 1;
+            tile[base_score_tile + 82] = 89 + d1 * 2 + 1;
+            tile[base_score_tile + 83] = 89 + d0 * 2 + 1;
+        end
+
+        // Pac-Man triggers tile replacement
+        pac_tile_x = pacman_x[9:3];
+        pac_tile_y = pacman_y[9:3];
+        pacman_tile_index = pac_tile_y * 80 + pac_tile_x;
+
+        if (pacman_tile_index == trigger_tile_index) begin
+            tile[trigger_tile_index] <= 12'h03;
         end
     end
+end
+
     initial begin
         $readmemh("pacman_up.vh",    pacman_up);
         $readmemh("pacman_right.vh", pacman_right);
