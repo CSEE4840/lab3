@@ -37,12 +37,16 @@ module vga_ball (
     reg [1:0] ghost_dir[0:3];
 
     reg [25:0] second_counter;
+    reg [6:0] game_timer;
+    reg gameover_latched;
+    reg [25:0] gameover_wait;
+
     wire [6:0] pac_tile_x = pacman_x[9:3];
     wire [6:0] pac_tile_y = pacman_y[9:3];
     wire [12:0] pacman_tile_index = pac_tile_y * 80 + pac_tile_x;
 
     reg [11:0] tile[0:4799];
-    reg [7:0] tile_bitmaps[0:879]; // 110 tiles x 8 rows = 880 lines
+    reg [7:0] tile_bitmaps[0:879];
 
     reg [7:0] score;
     reg [31:0] pacman_up[0:15], pacman_right[0:15], pacman_down[0:15], pacman_left[0:15], pacman_eat[0:15];
@@ -72,6 +76,19 @@ module vga_ball (
     initial begin
         $readmemh("map.vh", tile);
         $readmemh("tiles.vh", tile_bitmaps);
+
+        base_tile = 4640;
+
+        tile[base_tile + 0]  = 38 + (18 * 2);
+        tile[base_tile + 1]  = 38 + (2 * 2);
+        tile[base_tile + 2]  = 38 + (14 * 2);
+        tile[base_tile + 3]  = 38 + (17 * 2);
+        tile[base_tile + 4]  = 38 + (4 * 2);
+        tile[base_tile + 80] = 38 + (18 * 2) + 1;
+        tile[base_tile + 81] = 38 + (2 * 2) + 1;
+        tile[base_tile + 82] = 38 + (14 * 2) + 1;
+        tile[base_tile + 83] = 38 + (17 * 2) + 1;
+        tile[base_tile + 84] = 38 + (4 * 2) + 1;
     end
 
     reg [12:0] demo_index;
@@ -79,6 +96,9 @@ module vga_ball (
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             second_counter <= 0;
+            game_timer <= 0;
+            gameover_latched <= 0;
+            gameover_wait <= 0;
             pacman_x <= 340;
             pacman_y <= 240;
             pacman_dir <= DIR_RIGHT;
@@ -90,7 +110,8 @@ module vga_ball (
             ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
             ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
         end else begin
-            second_counter <= second_counter + 1;
+            if (!gameover_latched)
+                second_counter <= second_counter + 1;
 
             if (chipselect && write) begin
                 case (address)
@@ -103,37 +124,82 @@ module vga_ball (
                 endcase
             end
 
-            if (second_counter == 50_000_000) begin
+            if (!gameover_latched && second_counter == 50_000_000) begin
                 second_counter <= 0;
+                game_timer <= game_timer + 1;
 
-                if (demo_index <= 13'd4130) begin
-                    tile[demo_index] <= 12'd37;
-                    demo_index <= demo_index + 1;
+                if (game_timer == 100) begin
+                    gameover_latched <= 1;
+                    tile[2440 + 0]  <= 38 + (6 * 2);  // G
+                    tile[2440 + 1]  <= 38 + (0 * 2);  // A
+                    tile[2440 + 2]  <= 38 + (12 * 2); // M
+                    tile[2440 + 3]  <= 38 + (4 * 2);  // E
+                    tile[2440 + 4]  <= 12'd0;         // space or blank tile
+                    tile[2440 + 5]  <= 38 + (14 * 2); // O
+                    tile[2440 + 6]  <= 38 + (21 * 2); // V
+                    tile[2440 + 7]  <= 38 + (4 * 2);  // E
+                    tile[2440 + 8]  <= 38 + (17 * 2); // R
+
+                    tile[2520 + 0]  <= 38 + (6 * 2) + 1;
+                    tile[2520 + 1]  <= 38 + (0 * 2) + 1;
+                    tile[2520 + 2]  <= 38 + (12 * 2) + 1;
+                    tile[2520 + 3]  <= 38 + (4 * 2) + 1;
+                    tile[2520 + 4]  <= 12'd1;
+                    tile[2520 + 5]  <= 38 + (14 * 2) + 1;
+                    tile[2520 + 6]  <= 38 + (21 * 2) + 1;
+                    tile[2520 + 7]  <= 38 + (4 * 2) + 1;
+                    tile[2520 + 8]  <= 38 + (17 * 2) + 1;
+                end else begin
+                    if (demo_index <= 13'd4130) begin
+                        tile[demo_index] <= 12'd37;
+                        demo_index <= demo_index + 1;
+                    end
+
+                    if (score < 9999)
+                        score <= score + 1;
+
+                    pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
+                    ghost_dir[0] <= ghost_dir[0] + 1;
+                    ghost_dir[1] <= ghost_dir[1] + 1;
+                    ghost_dir[2] <= ghost_dir[2] + 1;
+                    ghost_dir[3] <= ghost_dir[3] + 1;
+
+                    d3 = score / 1000;
+                    d2 = (score % 1000) / 100;
+                    d1 = (score % 100) / 10;
+                    d0 = score % 10;
+
+                    base_score_tile = 1078;
+                    tile[base_score_tile + 0]  = 38 + (26 * 2) + d3 * 2;
+                    tile[base_score_tile + 1]  = 38 + (26 * 2) + d2 * 2;
+                    tile[base_score_tile + 2]  = 38 + (26 * 2) + d1 * 2;
+                    tile[base_score_tile + 3]  = 38 + (26 * 2) + d0 * 2;
+                    tile[base_score_tile + 80] = 38 + (26 * 2) + d3 * 2 + 1;
+                    tile[base_score_tile + 81] = 38 + (26 * 2) + d2 * 2 + 1;
+                    tile[base_score_tile + 82] = 38 + (26 * 2) + d1 * 2 + 1;
+                    tile[base_score_tile + 83] = 38 + (26 * 2) + d0 * 2 + 1;
                 end
-
-                if (score < 9999)
-                    score <= score + 1;
-
-                pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
-                ghost_dir[0] <= ghost_dir[0] + 1;
-                ghost_dir[1] <= ghost_dir[1] + 1;
-                ghost_dir[2] <= ghost_dir[2] + 1;
-                ghost_dir[3] <= ghost_dir[3] + 1;
-
-                d3 = score / 1000;
-                d2 = (score % 1000) / 100;
-                d1 = (score % 100) / 10;
-                d0 = score % 10;
-
-                base_score_tile = 1078;
-                tile[base_score_tile + 0]  = 26 + d3 * 2;
-                tile[base_score_tile + 1]  = 26 + d2 * 2;
-                tile[base_score_tile + 2]  = 26 + d1 * 2;
-                tile[base_score_tile + 3]  = 26 + d0 * 2;
-                tile[base_score_tile + 80] = 26 + d3 * 2 + 1;
-                tile[base_score_tile + 81] = 26 + d2 * 2 + 1;
-                tile[base_score_tile + 82] = 26 + d1 * 2 + 1;
-                tile[base_score_tile + 83] = 26 + d0 * 2 + 1;
+            end else if (gameover_latched) begin
+                gameover_wait <= gameover_wait + 1;
+                if (gameover_wait == 500_000_000) begin
+                    $readmemh("map.vh", tile);
+                    score <= 0;
+                    game_timer <= 0;
+                    demo_index <= 13'd4088;
+                    pacman_x <= 340;
+                    pacman_y <= 240;
+                    pacman_dir <= DIR_RIGHT;
+                    ghost_dir[0] <= DIR_LEFT;
+                    ghost_dir[1] <= DIR_RIGHT;
+                    ghost_dir[2] <= DIR_UP;
+                    ghost_dir[3] <= DIR_DOWN;
+                    ghost_x[0] <= 100; ghost_y[0] <= 100;
+                    ghost_x[1] <= 200; ghost_y[1] <= 100;
+                    ghost_x[2] <= 300; ghost_y[2] <= 100;
+                    ghost_x[3] <= 400; ghost_y[3] <= 100;
+                    gameover_latched <= 0;
+                    gameover_wait <= 0;
+                end
             end
 
             pac_tile_x = pacman_x[9:3];
