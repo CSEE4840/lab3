@@ -8,8 +8,14 @@ module vga_ball (
 
     output reg [7:0] VGA_R, VGA_G, VGA_B,
     output VGA_CLK, VGA_HS, VGA_VS,
-    output VGA_BLANK_n, VGA_SYNC_n
-    //output pwm_out
+    output VGA_BLANK_n, VGA_SYNC_n,
+    input  logic        L_READY,
+    input  logic        R_READY,
+    output logic [15:0] L_DATA,
+    output logic [15:0] R_DATA,
+    output logic        L_VALID,
+    output logic        R_VALID
+
 );
 
     wire [10:0] hcount;
@@ -87,6 +93,14 @@ module vga_ball (
         base_tile = 752;
     end
 
+reg [15:0] audio_data[0:480000];
+reg [18:0] sample_index;
+reg [15:0] sample_clock;
+reg [15:0] current_sample;
+
+initial $readmemh("background.vh", audio_data);
+
+
     always @(posedge clk or posedge reset) begin
     if (reset) begin
         second_counter <= 0;
@@ -103,6 +117,30 @@ module vga_ball (
         ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
         ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
     end else begin
+	// Audio Streaming - 48kHz @ 50MHz (every 1041 cycles)
+	if (sample_clock == 1041) begin
+	    sample_clock <= 0;
+	    current_sample <= audio_data[sample_index];
+	    sample_index <= (sample_index == 480000) ? 0 : sample_index + 1;
+	end else begin
+	    sample_clock <= sample_clock + 1;
+	end
+	
+	// Send to Audio Core when ready
+	if (L_READY) begin
+	    L_DATA <= current_sample;
+	    L_VALID <= 1;
+	end else begin
+	    L_VALID <= 0;
+	end
+	
+	if (R_READY) begin
+	    R_DATA <= current_sample;
+	    R_VALID <= 1;
+	end else begin
+	    R_VALID <= 0;
+	end
+
         if (!gameover_latched)
             second_counter <= second_counter + 1;
 
