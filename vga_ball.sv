@@ -88,129 +88,112 @@ module vga_ball (
     end
 
     always @(posedge clk or posedge reset) begin
-        if (reset) begin
-            second_counter <= 0;
-            game_timer <= 0;
-            gameover_latched <= 0;
-            gameover_wait <= 0;
-            pacman_x <= 340;
-            pacman_y <= 240;
-            pacman_dir <= DIR_RIGHT;
-            score <= 0;
-            demo_index <= 13'd4088;
-            ghost_x[0] <= 100; ghost_y[0] <= 100; ghost_dir[0] <= DIR_LEFT;
-            ghost_x[1] <= 200; ghost_y[1] <= 100; ghost_dir[1] <= DIR_RIGHT;
-            ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
-            ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
-        end else begin
-            if (!gameover_latched)
-                second_counter <= second_counter + 1;
+    if (reset) begin
+        second_counter <= 0;
+        game_timer <= 0;
+        gameover_latched <= 0;
+        gameover_wait <= 0;
+        pacman_x <= 340;
+        pacman_y <= 240;
+        pacman_dir <= DIR_RIGHT;
+        score <= 0;
+        demo_index <= 13'd4088;
+        ghost_x[0] <= 100; ghost_y[0] <= 100; ghost_dir[0] <= DIR_LEFT;
+        ghost_x[1] <= 200; ghost_y[1] <= 100; ghost_dir[1] <= DIR_RIGHT;
+        ghost_x[2] <= 300; ghost_y[2] <= 100; ghost_dir[2] <= DIR_UP;
+        ghost_x[3] <= 400; ghost_y[3] <= 100; ghost_dir[3] <= DIR_DOWN;
+    end else begin
+        if (!gameover_latched)
+            second_counter <= second_counter + 1;
 
-            if (chipselect && write) begin
-                case (address)
-                    5'd0: begin
-                        pacman_x <= writedata[7:0];
-                        pacman_y <= writedata[15:8];
-                    end
-                    5'd3: pacman_dir <= writedata[2:0];
-                    5'd4: trigger_tile_index <= writedata[12:0];
-                    5'd5: begin
-                        if (writedata == 16'h0001) begin
-                            gameover_latched <= 1;
-                            second_counter <= 0;
-                        end else if (writedata == 16'h0000) begin
-                            $readmemh("map.vh", tile);
-                            score <= 0;
-                            game_timer <= 0;
-                            demo_index <= 13'd4088;
-                            pacman_x <= 340;
-                            pacman_y <= 240;
-                            pacman_dir <= DIR_RIGHT;
-                            ghost_dir[0] <= DIR_LEFT;
-                            ghost_dir[1] <= DIR_RIGHT;
-                            ghost_dir[2] <= DIR_UP;
-                            ghost_dir[3] <= DIR_DOWN;
-                            ghost_x[0] <= 100; ghost_y[0] <= 100;
-                            ghost_x[1] <= 200; ghost_y[1] <= 100;
-                            ghost_x[2] <= 300; ghost_y[2] <= 100;
-                            ghost_x[3] <= 400; ghost_y[3] <= 100;
-                            gameover_latched <= 0;
-                            gameover_wait <= 0;
-                        end
-                    end
-		    5'd6: begin ghost_x[0] <= writedata[7:0]; ghost_y[0] <= writedata[15:8]; end 
-		    5'd7: begin ghost_x[1] <= writedata[7:0]; ghost_y[1] <= writedata[15:8]; end
-		    5'd8: begin ghost_x[2] <= writedata[7:0]; ghost_y[2] <= writedata[15:8]; end
-		    5'd9: begin ghost_x[3] <= writedata[7:0]; ghost_y[3] <= writedata[15:8]; end
-		    5'd10: ghost_dir[0] <= writedata[1:0];
-		    5'd11: ghost_dir[1] <= writedata[1:0];
-		    5'd12: ghost_dir[2] <= writedata[1:0];
-		    5'd13: ghost_dir[3] <= writedata[1:0];
-		    5'd14: score <= writedata[7:0];
-                endcase
-            end
-
-            if (!gameover_latched && second_counter == 50_000_000) begin
-                second_counter <= 0;
-                game_timer <= game_timer + 1;
-
-                if (game_timer == 50) begin
-                    gameover_latched <= 1;
-		    tile[3712 + 0]  <= 38 + (6 * 2);
-                    tile[3712 + 1]  <= 38 + (0 * 2);
-                    tile[3712 + 2]  <= 38 + (12 * 2);
-                    tile[3712 + 3]  <= 38 + (4 * 2);
-                    tile[3712 + 4]  <= 12'h25;
-                    tile[3712 + 5]  <= 38 + (14 * 2);
-                    tile[3712 + 6]  <= 38 + (21 * 2);
-                    tile[3712 + 7]  <= 38 + (4 * 2);
-                    tile[3712 + 8]  <= 38 + (17 * 2);
-		    tile[3792 + 0]  <= 38 + (6 * 2) + 1;
-                    tile[3792 + 1]  <= 38 + (0 * 2) + 1;
-                    tile[3792 + 2]  <= 38 + (12 * 2) + 1;
-                    tile[3792 + 3]  <= 38 + (4 * 2) + 1;
-                    tile[3792 + 4]  <= 12'h25;
-                    tile[3792 + 5]  <= 38 + (14 * 2) + 1;
-                    tile[3792 + 6]  <= 38 + (21 * 2) + 1;
-                    tile[3792 + 7]  <= 38 + (4 * 2) + 1;
-                    tile[3792 + 8]  <= 38 + (17 * 2) + 1;
-                end else begin
-                    if (demo_index <= 13'd4130) begin
-                        tile[demo_index] <= 12'd37;
-                        demo_index <= demo_index + 1;
-                    end
-                    if (score < 9999)
-                        score <= score + 1;
-
-                    pacman_dir <= (pacman_dir == DIR_EAT) ? DIR_UP : pacman_dir + 1;
-                    ghost_dir[0] <= ghost_dir[0] + 1;
-                    ghost_dir[1] <= ghost_dir[1] + 1;
-                    ghost_dir[2] <= ghost_dir[2] + 1;
-                    ghost_dir[3] <= ghost_dir[3] + 1;
+        if (chipselect && write) begin
+            case (address)
+                5'd0: begin
+                    pacman_x <= writedata[7:0];
+                    pacman_y <= writedata[15:8];
                 end
-            end else if (gameover_latched) begin
-                gameover_wait <= gameover_wait + 1;
-                if (gameover_wait == 50_000_000) begin
-                    $readmemh("map.vh", tile);
-                    score <= 0;
-                    game_timer <= 0;
-                    demo_index <= 13'd4088;
-                    pacman_x <= 340;
-                    pacman_y <= 240;
-                    pacman_dir <= DIR_RIGHT;
-                    ghost_dir[0] <= DIR_LEFT;
-                    ghost_dir[1] <= DIR_RIGHT;
-                    ghost_dir[2] <= DIR_UP;
-                    ghost_dir[3] <= DIR_DOWN;
-                    ghost_x[0] <= 100; ghost_y[0] <= 100;
-                    ghost_x[1] <= 200; ghost_y[1] <= 100;
-                    ghost_x[2] <= 300; ghost_y[2] <= 100;
-                    ghost_x[3] <= 400; ghost_y[3] <= 100;
-                    gameover_latched <= 0;
-                    gameover_wait <= 0;
+                5'd3: pacman_dir <= writedata[2:0];
+                5'd4: trigger_tile_index <= writedata[12:0];
+                5'd5: begin
+                    if (writedata == 16'h0001) begin
+                        gameover_latched <= 1;
+                        second_counter <= 0;
+                    end else if (writedata == 16'h0000) begin
+                        $readmemh("map.vh", tile);
+                        score <= 0;
+                        game_timer <= 0;
+                        demo_index <= 13'd4088;
+                        pacman_x <= 340;
+                        pacman_y <= 240;
+                        pacman_dir <= DIR_RIGHT;
+                        ghost_dir[0] <= DIR_LEFT;
+                        ghost_dir[1] <= DIR_RIGHT;
+                        ghost_dir[2] <= DIR_UP;
+                        ghost_dir[3] <= DIR_DOWN;
+                        ghost_x[0] <= 100; ghost_y[0] <= 100;
+                        ghost_x[1] <= 200; ghost_y[1] <= 100;
+                        ghost_x[2] <= 300; ghost_y[2] <= 100;
+                        ghost_x[3] <= 400; ghost_y[3] <= 100;
+                        gameover_latched <= 0;
+                        gameover_wait <= 0;
+                    end
                 end
-            end
+                5'd6: begin ghost_x[0] <= writedata[7:0]; ghost_y[0] <= writedata[15:8]; end 
+                5'd7: begin ghost_x[1] <= writedata[7:0]; ghost_y[1] <= writedata[15:8]; end
+                5'd8: begin ghost_x[2] <= writedata[7:0]; ghost_y[2] <= writedata[15:8]; end
+                5'd9: begin ghost_x[3] <= writedata[7:0]; ghost_y[3] <= writedata[15:8]; end
+                5'd10: ghost_dir[0] <= writedata[1:0];
+                5'd11: ghost_dir[1] <= writedata[1:0];
+                5'd12: ghost_dir[2] <= writedata[1:0];
+                5'd13: ghost_dir[3] <= writedata[1:0];
+                5'd14: score <= writedata[7:0];
+            endcase
+        end
 
+        if (gameover_latched) begin
+            // Display GAME OVER text
+            tile[3712 + 0]  <= 38 + (6 * 2);   // G
+            tile[3712 + 1]  <= 38 + (0 * 2);   // A
+            tile[3712 + 2]  <= 38 + (12 * 2);  // M
+            tile[3712 + 3]  <= 38 + (4 * 2);   // E
+            tile[3712 + 4]  <= 12'h25;         // blank tile
+            tile[3712 + 5]  <= 38 + (14 * 2);  // O
+            tile[3712 + 6]  <= 38 + (21 * 2);  // V
+            tile[3712 + 7]  <= 38 + (4 * 2);   // E
+            tile[3712 + 8]  <= 38 + (17 * 2);  // R
+
+            tile[3792 + 0]  <= 38 + (6 * 2) + 1;
+            tile[3792 + 1]  <= 38 + (0 * 2) + 1;
+            tile[3792 + 2]  <= 38 + (12 * 2) + 1;
+            tile[3792 + 3]  <= 38 + (4 * 2) + 1;
+            tile[3792 + 4]  <= 12'h25;
+            tile[3792 + 5]  <= 38 + (14 * 2) + 1;
+            tile[3792 + 6]  <= 38 + (21 * 2) + 1;
+            tile[3792 + 7]  <= 38 + (4 * 2) + 1;
+            tile[3792 + 8]  <= 38 + (17 * 2) + 1;
+
+            gameover_wait <= gameover_wait + 1;
+            if (gameover_wait == 50_000_000) begin
+                $readmemh("map.vh", tile);
+                score <= 0;
+                demo_index <= 13'd4088;
+                pacman_x <= 340;
+                pacman_y <= 240;
+                pacman_dir <= DIR_RIGHT;
+                ghost_dir[0] <= DIR_LEFT;
+                ghost_dir[1] <= DIR_RIGHT;
+                ghost_dir[2] <= DIR_UP;
+                ghost_dir[3] <= DIR_DOWN;
+                ghost_x[0] <= 100; ghost_y[0] <= 100;
+                ghost_x[1] <= 200; ghost_y[1] <= 100;
+                ghost_x[2] <= 300; ghost_y[2] <= 100;
+                ghost_x[3] <= 400; ghost_y[3] <= 100;
+                gameover_latched <= 0;
+                gameover_wait <= 0;
+            end
+        end
+
+        // Constant score display
         tile[base_tile + 0]  = 38 + (18 * 2);
         tile[base_tile + 1]  = 38 + (2 * 2);
         tile[base_tile + 2]  = 38 + (14 * 2);
@@ -222,25 +205,26 @@ module vga_ball (
         tile[base_tile + 83] = 38 + (17 * 2) + 1;
         tile[base_tile + 84] = 38 + (4 * 2) + 1;
 
-            d3 = score / 1000;
-            d2 = (score % 1000) / 100;
-            d1 = (score % 100) / 10;
-            d0 = score % 10;
-            base_score_tile = 761;
-            tile[base_score_tile + 0]  = 38 + (26 * 2) + d3 * 2;
-            tile[base_score_tile + 1]  = 38 + (26 * 2) + d2 * 2;
-            tile[base_score_tile + 2]  = 38 + (26 * 2) + d1 * 2;
-            tile[base_score_tile + 3]  = 38 + (26 * 2) + d0 * 2;
-            tile[base_score_tile + 80] = 38 + (26 * 2) + d3 * 2 + 1;
-            tile[base_score_tile + 81] = 38 + (26 * 2) + d2 * 2 + 1;
-            tile[base_score_tile + 82] = 38 + (26 * 2) + d1 * 2 + 1;
-            tile[base_score_tile + 83] = 38 + (26 * 2) + d0 * 2 + 1;
+        d3 = score / 1000;
+        d2 = (score % 1000) / 100;
+        d1 = (score % 100) / 10;
+        d0 = score % 10;
+        base_score_tile = 761;
+        tile[base_score_tile + 0]  = 38 + (26 * 2) + d3 * 2;
+        tile[base_score_tile + 1]  = 38 + (26 * 2) + d2 * 2;
+        tile[base_score_tile + 2]  = 38 + (26 * 2) + d1 * 2;
+        tile[base_score_tile + 3]  = 38 + (26 * 2) + d0 * 2;
+        tile[base_score_tile + 80] = 38 + (26 * 2) + d3 * 2 + 1;
+        tile[base_score_tile + 81] = 38 + (26 * 2) + d2 * 2 + 1;
+        tile[base_score_tile + 82] = 38 + (26 * 2) + d1 * 2 + 1;
+        tile[base_score_tile + 83] = 38 + (26 * 2) + d0 * 2 + 1;
 
-            if ((pacman_y[9:3] * 80 + pacman_x[9:3]) == trigger_tile_index) begin
-                tile[trigger_tile_index] <= 12'h25;
-            end
+        if ((pacman_y[9:3] * 80 + pacman_x[9:3]) == trigger_tile_index) begin
+            tile[trigger_tile_index] <= 12'h25;
         end
     end
+end
+
     initial begin
         $readmemh("pacman_up.vh",    pacman_up);
         $readmemh("pacman_right.vh", pacman_right);
