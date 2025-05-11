@@ -1,17 +1,33 @@
 module audio_player (
-    input clk,          // 50 MHz clock
-    input reset,
-    input play,         // 1 = play, 0 = idle
+    input wire clk,
+    input wire reset,
+
+    // Avalon-MM slave interface
+    input wire chipselect,
+    input wire write,
+    input wire [1:0] address,
+    input wire [31:0] writedata,
+
     output reg pwm_out
 );
 
-    reg [15:0] audio_data[0:480000]; // 10 seconds @ 48 kHz
+    reg play;
+
+    reg [15:0] audio_data[0:480000];
     reg [15:0] sample;
     reg [18:0] sample_index;
     reg [15:0] pwm_counter;
     reg [15:0] sample_clock;
 
-    initial $readmemh("background.vh", audio_data); // your background music
+    initial $readmemh("background.vh", audio_data);
+
+    // Avalon-MM interface
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            play <= 0;
+        else if (chipselect && write && address == 2'd0)
+            play <= writedata[0];
+    end
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -20,24 +36,18 @@ module audio_player (
             sample_clock <= 0;
             pwm_out <= 0;
         end else if (play) begin
-            // Playback timing (48 kHz = ~1041 cycles at 50 MHz)
-            if (sample_clock == 1041) begin
+            if (sample_clock == 1041) begin  // ~48kHz playback at 50MHz
                 sample_clock <= 0;
                 sample <= audio_data[sample_index];
-                if (sample_index < 480000)
-                    sample_index <= sample_index + 1;
-                else
-                    sample_index <= 0; // loop
+                sample_index <= sample_index + 1;
+                if (sample_index == 480000)
+                    sample_index <= 0;
             end else begin
                 sample_clock <= sample_clock + 1;
             end
 
-            pwm_counter <= pwm_counter + 1;
             pwm_out <= (pwm_counter < sample);
-        end else begin
-            sample_index <= 0;
-            pwm_counter <= 0;
-            pwm_out <= 0;
+            pwm_counter <= pwm_counter + 1;
         end
     end
 endmodule
