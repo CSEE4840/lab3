@@ -1,3 +1,4 @@
+module vga_ball (
     input clk,
     input reset,
     input [15:0] writedata,
@@ -7,8 +8,8 @@
 
     output reg [7:0] VGA_R, VGA_G, VGA_B,
     output VGA_CLK, VGA_HS, VGA_VS,
-    output VGA_BLANK_n, VGA_SYNC_n,
-    output pwm_out
+    output VGA_BLANK_n, VGA_SYNC_n
+    //output pwm_out
 );
 
     wire [10:0] hcount;
@@ -24,16 +25,15 @@
         .VGA_BLANK_n(VGA_BLANK_n),
         .VGA_SYNC_n(VGA_SYNC_n)
     );
-
+/*
     audio_player background_music (
         .clk(clk),
         .reset(reset),
         .play(1'b1),
         .pwm_out(pwm_out)
     );
-
+*/
     localparam DIR_UP = 3'd0, DIR_RIGHT = 3'd1, DIR_DOWN = 3'd2, DIR_LEFT = 3'd3, DIR_EAT = 3'd4;
-
     reg [9:0] pacman_x;
     reg [9:0] pacman_y;
     reg [2:0] pacman_dir;
@@ -48,14 +48,38 @@
     reg gameover_latched;
     reg [25:0] gameover_wait;
 
+    wire [6:0] pac_tile_x = pacman_x[9:3];
+    wire [6:0] pac_tile_y = pacman_y[9:3];
+    wire [12:0] pacman_tile_index = pac_tile_y * 80 + pac_tile_x;
+
     reg [11:0] tile[0:4799];
     reg [7:0] tile_bitmaps[0:879];
 
     reg [7:0] score;
-    reg [12:0] demo_index;
+    reg [31:0] pacman_up[0:15], pacman_right[0:15], pacman_down[0:15], pacman_left[0:15], pacman_eat[0:15];
 
+    wire [6:0] tile_x = hcount[10:4];
+    wire [6:0] tile_y = vcount[9:3];
+    wire [2:0] tx = hcount[3:1];
+    wire [2:0] ty = vcount[2:0];
+
+    wire [12:0] tile_index = tile_y * 80 + tile_x;
+    wire [11:0] tile_id = tile[tile_index];
+    wire [7:0] bitmap_row = tile_bitmaps[tile_id * 8 + ty];
+    wire pixel_on = bitmap_row[7 - tx];
+
+    wire [3:0] pacman_x16 = hcount[10:1] - pacman_x;
+    wire [3:0] pacman_y16 = vcount - pacman_y;
+    wire on_pacman = (hcount[10:1] >= pacman_x && hcount[10:1] < pacman_x + 16 &&
+                      vcount >= pacman_y && vcount < pacman_y + 16);
+
+    reg [31:0] pacman_row;
+    integer i, gi, gx, gy;
     integer d0, d1, d2, d3;
-    integer base_tile, base_score_tile;
+    integer base_tile;
+    integer base_score_tile;
+    reg [1:0] ghost_pixel;
+    reg [12:0] demo_index;
 
     initial begin
         $readmemh("map.vh", tile);
@@ -193,7 +217,7 @@
             tile[base_score_tile + 83] = 38 + (26 * 2) + d0 * 2 + 1;
 
             if ((pacman_y[9:3] * 80 + pacman_x[9:3]) == trigger_tile_index) begin
-                tile[trigger_tile_index] <= 12'h03;
+                tile[trigger_tile_index] <= 12'h25;
             end
         end
     end
@@ -286,7 +310,7 @@
         VGA_R = 0; VGA_G = 0; VGA_B = 0;
 
         if (pixel_on) begin
-            if (tile_id == 12'h0A || tile_id >= 12'h26)
+            if (tile_id == 12'h0A || tile_id >= 12'h26 || tile_id == 12'h14)
                 {VGA_R, VGA_G, VGA_B} = 24'hFFFFFF;
             else
                 VGA_B = 8'hFF;
@@ -339,6 +363,7 @@
     end
 
 endmodule
+
 
 
 
