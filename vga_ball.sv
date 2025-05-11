@@ -97,6 +97,9 @@ reg [15:0] audio_data[0:480000];
 reg [18:0] sample_index;
 reg [15:0] sample_clock;
 reg [15:0] current_sample;
+localparam SCREEN_X_OFFSET = 26 * 8;  // 8 pixels per tile
+localparam SCREEN_Y_OFFSET = 15 * 8;
+
 
 initial $readmemh("background.vh", audio_data);
 
@@ -348,61 +351,69 @@ end
 };
 
 
-    always @(*) begin
-        VGA_R = 0; VGA_G = 0; VGA_B = 0;
+always @(*) begin
+    VGA_R = 0; VGA_G = 0; VGA_B = 0;
 
-        if (pixel_on) begin
-            if (tile_id == 12'h0A || tile_id >= 12'h26 || tile_id == 12'h14)
-                {VGA_R, VGA_G, VGA_B} = 24'hFFFFFF;
-            else
-                VGA_B = 8'hFF;
-        end
+    if (pixel_on) begin
+        if (tile_id == 12'h0A || tile_id >= 12'h26 || tile_id == 12'h14)
+            {VGA_R, VGA_G, VGA_B} = 24'hFFFFFF;
+        else
+            VGA_B = 8'hFF;
+    end
 
-        pacman_row = 32'b0;
-        if (vcount >= pacman_y && vcount < pacman_y + 16) begin
-            case (pacman_dir)
-                DIR_UP:    pacman_row = pacman_up[vcount - pacman_y];
-                DIR_RIGHT: pacman_row = pacman_right[vcount - pacman_y];
-                DIR_DOWN:  pacman_row = pacman_down[vcount - pacman_y];
-                DIR_LEFT:  pacman_row = pacman_left[vcount - pacman_y];
-                DIR_EAT:   pacman_row = pacman_eat[vcount - pacman_y];
+    pacman_row = 32'b0;
+    if (vcount >= pacman_y + SCREEN_Y_OFFSET &&
+        vcount < pacman_y + SCREEN_Y_OFFSET + 16) begin
+        case (pacman_dir)
+            DIR_UP:    pacman_row = pacman_up[vcount - pacman_y - SCREEN_Y_OFFSET];
+            DIR_RIGHT: pacman_row = pacman_right[vcount - pacman_y - SCREEN_Y_OFFSET];
+            DIR_DOWN:  pacman_row = pacman_down[vcount - pacman_y - SCREEN_Y_OFFSET];
+            DIR_LEFT:  pacman_row = pacman_left[vcount - pacman_y - SCREEN_Y_OFFSET];
+            DIR_EAT:   pacman_row = pacman_eat[vcount - pacman_y - SCREEN_Y_OFFSET];
+        endcase
+    end
+
+    if (hcount[10:1] >= pacman_x + SCREEN_X_OFFSET &&
+        hcount[10:1] < pacman_x + SCREEN_X_OFFSET + 16 &&
+        vcount >= pacman_y + SCREEN_Y_OFFSET &&
+        vcount < pacman_y + SCREEN_Y_OFFSET + 16 &&
+        pacman_row[15 - (hcount[10:1] - pacman_x - SCREEN_X_OFFSET)]) begin
+        VGA_R = 8'hFF;
+        VGA_G = 8'hFF;
+        VGA_B = 8'h00;
+    end
+
+    for (gi = 0; gi < 4; gi = gi + 1) begin
+        if (hcount[10:1] >= ghost_x[gi] + SCREEN_X_OFFSET &&
+            hcount[10:1] < ghost_x[gi] + SCREEN_X_OFFSET + 16 &&
+            vcount >= ghost_y[gi] + SCREEN_Y_OFFSET &&
+            vcount < ghost_y[gi] + SCREEN_Y_OFFSET + 16) begin
+
+            gx = hcount[10:1] - ghost_x[gi] - SCREEN_X_OFFSET;
+            gy = vcount - ghost_y[gi] - SCREEN_Y_OFFSET;
+
+            case (ghost_dir[gi])
+                DIR_UP:    ghost_pixel = GHOST_UP[gy][gx];
+                DIR_DOWN:  ghost_pixel = GHOST_DOWN[gy][gx];
+                DIR_LEFT:  ghost_pixel = GHOST_LEFT[gy][gx];
+                DIR_RIGHT: ghost_pixel = GHOST_RIGHT[gy][gx];
+                default:   ghost_pixel = 2'b00;
+            endcase
+
+            case (ghost_pixel)
+                2'b01: case (gi)
+                    0: begin VGA_R = 8'hFF; VGA_G = 0;     VGA_B = 0;     end
+                    1: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 8'hFF; end
+                    2: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 0;     end
+                    3: begin VGA_R = 0;     VGA_G = 8'hFF; VGA_B = 8'hFF; end
+                endcase
+                2'b10: begin VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 8'hFF; end
+                2'b11: begin VGA_R = 0;     VGA_G = 0;     VGA_B = 8'h88; end
             endcase
         end
-
-        if (on_pacman && pacman_row[15 - (hcount[10:1] - pacman_x)]) begin
-            VGA_R = 8'hFF;
-            VGA_G = 8'hFF;
-            VGA_B = 8'h00;
-        end
-
-        for (gi = 0; gi < 4; gi = gi + 1) begin
-            if (hcount[10:1] >= ghost_x[gi] && hcount[10:1] < ghost_x[gi] + 16 &&
-                vcount >= ghost_y[gi] && vcount < ghost_y[gi] + 16) begin
-
-                gx = hcount[10:1] - ghost_x[gi];
-                gy = vcount - ghost_y[gi];
-
-                case (ghost_dir[gi])
-                    DIR_UP:    ghost_pixel = GHOST_UP[gy][gx];
-                    DIR_DOWN:  ghost_pixel = GHOST_DOWN[gy][gx];
-                    DIR_LEFT:  ghost_pixel = GHOST_LEFT[gy][gx];
-                    DIR_RIGHT: ghost_pixel = GHOST_RIGHT[gy][gx];
-                    default:   ghost_pixel = 2'b00;
-                endcase
-
-                case (ghost_pixel)
-                    2'b01: case (gi)
-                        0: begin VGA_R = 8'hFF; VGA_G = 0;     VGA_B = 0;     end
-                        1: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 8'hFF; end
-                        2: begin VGA_R = 8'hFF; VGA_G = 8'hAA; VGA_B = 0;     end
-                        3: begin VGA_R = 0;     VGA_G = 8'hFF; VGA_B = 8'hFF; end
-                    endcase
-                    2'b10: begin VGA_R = 8'hFF; VGA_G = 8'hFF; VGA_B = 8'hFF; end
-                    2'b11: begin VGA_R = 0;     VGA_G = 0;     VGA_B = 8'h88; end
-                endcase
-            end
-        end
     end
+end
+
 
 endmodule
 
