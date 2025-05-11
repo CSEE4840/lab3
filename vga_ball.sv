@@ -138,6 +138,15 @@ module vga_ball (
                             gameover_wait <= 0;
                         end
                     end
+		    5'd6: begin ghost_x[0] <= writedata[7:0]; ghost_y[0] <= writedata[15:8]; end 
+		    5'd7: begin ghost_x[1] <= writedata[7:0]; ghost_y[1] <= writedata[15:8]; end
+		    5'd8: begin ghost_x[2] <= writedata[7:0]; ghost_y[2] <= writedata[15:8]; end
+		    5'd9: begin ghost_x[3] <= writedata[7:0]; ghost_y[3] <= writedata[15:8]; end
+		    5'd10: ghost_dir[0] <= writedata[1:0];
+		    5'd11: ghost_dir[1] <= writedata[1:0];
+		    5'd12: ghost_dir[2] <= writedata[1:0];
+		    5'd13: ghost_dir[3] <= writedata[1:0];
+		    5'd14: score <= writedata[7:0];
                 endcase
             end
 
@@ -201,6 +210,17 @@ module vga_ball (
                     gameover_wait <= 0;
                 end
             end
+
+        tile[base_tile + 0]  = 38 + (18 * 2);
+        tile[base_tile + 1]  = 38 + (2 * 2);
+        tile[base_tile + 2]  = 38 + (14 * 2);
+        tile[base_tile + 3]  = 38 + (17 * 2);
+        tile[base_tile + 4]  = 38 + (4 * 2);
+        tile[base_tile + 80] = 38 + (18 * 2) + 1;
+        tile[base_tile + 81] = 38 + (2 * 2) + 1;
+        tile[base_tile + 82] = 38 + (14 * 2) + 1;
+        tile[base_tile + 83] = 38 + (17 * 2) + 1;
+        tile[base_tile + 84] = 38 + (4 * 2) + 1;
 
             d3 = score / 1000;
             d2 = (score % 1000) / 100;
