@@ -1,3 +1,39 @@
+[ty2534@micro04 hardware]$ make dtb
+/tools/intel/intelFPGA/20.1/embedded/host_tools/altera/device_tree/sopc2dts
+sopc2dts --input soc_system.sopcinfo \
+	--output soc_system.dts \
+	--type dts \
+	--board soc_system_board_info.xml \
+	--clocks
+Component audio_0 of class altera_up_avalon_audio is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
+/tools/intel/intelFPGA/20.1/embedded/host_tools/gnu/dtc/dtc
+dtc -I dts -O dtb -o soc_system.dtb soc_system.dts
+
 module vga_ball (
     input clk,
     input reset,
