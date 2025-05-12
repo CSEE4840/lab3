@@ -85,12 +85,15 @@ module vga_ball (
     output reg [7:0] VGA_R, VGA_G, VGA_B,
     output VGA_CLK, VGA_HS, VGA_VS,
     output VGA_BLANK_n, VGA_SYNC_n,
-    input  logic        L_READY,
-    input  logic        R_READY,
-    output logic [16:0] L_DATA,
-    output logic [16:0] R_DATA,
-    output logic        L_VALID,
-    output logic        R_VALID
+       // Avalon-ST bundled interfaces for audio
+    output logic [15:0] left_data,
+    output logic        left_valid,
+    input  logic        left_ready,
+
+    output logic [15:0] right_data,
+    output logic        right_valid,
+    input  logic        right_ready,
+
 
 );
 
@@ -191,19 +194,14 @@ initial $readmemh("audio.vh", audio_data);
 	end
 	
 	// Send to Audio Core when ready
-	if (L_READY) begin
-	    L_DATA <= current_sample;
-	    L_VALID <= 1;
-	end else begin
-	    L_VALID <= 0;
-	end
-	
-	if (R_READY) begin
-	    R_DATA <= current_sample;
-	    R_VALID <= 1;
-	end else begin
-	    R_VALID <= 0;
-	end
+	    left_valid <= (sample_clock == 1041) && left_ready;
+    right_valid <= (sample_clock == 1041) && right_ready;
+
+    if (left_ready)
+        left_data <= current_sample;
+    if (right_ready)
+        right_data <= current_sample;
+
 
         if (chipselect && write) begin
             case (address[4:0])
