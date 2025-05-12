@@ -1,38 +1,78 @@
-[ty2534@micro04 hardware]$ make dtb
-/tools/intel/intelFPGA/20.1/embedded/host_tools/altera/device_tree/sopc2dts
-sopc2dts --input soc_system.sopcinfo \
-	--output soc_system.dts \
-	--type dts \
-	--board soc_system_board_info.xml \
-	--clocks
-Component audio_0 of class altera_up_avalon_audio is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-Component audio_and_video_config_0 of class altera_up_avalon_audio_and_video_config is unknown
-/tools/intel/intelFPGA/20.1/embedded/host_tools/gnu/dtc/dtc
-dtc -I dts -O dtb -o soc_system.dtb soc_system.dts
+Critical Warning (127005): Memory depth (1024) in the design file differs from memory depth (880) in the Memory Initialization File "/homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/db/soc_system.ram0_vga_ball_7113ff51.hdl.mif" -- setting initial value for remaining addresses to 0
+Warning (127007): Memory Initialization File or Hexadecimal (Intel-Format) File "/homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/db/soc_system.ram2_vga_ball_7113ff51.hdl.mif" contains "don't care" values -- overwriting them with 0s
+Warning (13046): Tri-state node(s) do not directly drive top-level pin(s)
+    Warning (13049): Converted tri-state buffer "soc_system:soc_system0|soc_system_audio_and_video_config_0:audio_and_video_config_0|altera_up_av_config_serial_bus_controller:Serial_Bus_Controller|serial_data~synth" feeding internal logic into a wire File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system/synthesis/submodules/altera_up_av_config_serial_bus_controller.v Line: 81
+Warning (12241): 37 hierarchies have connectivity warnings - see the Connectivity Checks report folder
+Warning (13009): TRI or OPNDRN buffers permanently enabled
+    Warning (13010): Node "HPS_CONV_USB_N~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 104
+    Warning (13010): Node "HPS_DDR3_DQ[0]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[1]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[2]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[3]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[4]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[5]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[6]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[7]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[8]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[9]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[10]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[11]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[12]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[13]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[14]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[15]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[16]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[17]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[18]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[19]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[20]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[21]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[22]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[23]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[24]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[25]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[26]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[27]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[28]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[29]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[30]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQ[31]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 113
+    Warning (13010): Node "HPS_DDR3_DQS_N[0]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 114
+    Warning (13010): Node "HPS_DDR3_DQS_N[1]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 114
+    Warning (13010): Node "HPS_DDR3_DQS_N[2]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 114
+    Warning (13010): Node "HPS_DDR3_DQS_N[3]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 114
+    Warning (13010): Node "HPS_DDR3_DQS_P[0]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 115
+    Warning (13010): Node "HPS_DDR3_DQS_P[1]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 115
+    Warning (13010): Node "HPS_DDR3_DQS_P[2]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 115
+    Warning (13010): Node "HPS_DDR3_DQS_P[3]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 115
+    Warning (13010): Node "HPS_ENET_INT_N~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 122
+    Warning (13010): Node "HPS_ENET_MDIO~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 124
+    Warning (13010): Node "HPS_GSENSOR_INT~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 130
+    Warning (13010): Node "HPS_I2C1_SCLK~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 131
+    Warning (13010): Node "HPS_I2C1_SDAT~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 132
+    Warning (13010): Node "HPS_I2C2_SCLK~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 133
+    Warning (13010): Node "HPS_I2C2_SDAT~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 134
+    Warning (13010): Node "HPS_I2C_CONTROL~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 135
+    Warning (13010): Node "HPS_KEY~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 136
+    Warning (13010): Node "HPS_LED~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 137
+    Warning (13010): Node "HPS_LTC_GPIO~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 138
+    Warning (13010): Node "HPS_SD_CMD~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 140
+    Warning (13010): Node "HPS_SD_DATA[0]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 141
+    Warning (13010): Node "HPS_SD_DATA[1]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 141
+    Warning (13010): Node "HPS_SD_DATA[2]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 141
+    Warning (13010): Node "HPS_SD_DATA[3]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 141
+    Warning (13010): Node "HPS_SPIM_SS~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 145
+    Warning (13010): Node "HPS_USB_DATA[0]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+    Warning (13010): Node "HPS_USB_DATA[1]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+    Warning (13010): Node "HPS_USB_DATA[2]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+    Warning (13010): Node "HPS_USB_DATA[3]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+    Warning (13010): Node "HPS_USB_DATA[4]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+    Warning (13010): Node "HPS_USB_DATA[5]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+    Warning (13010): Node "HPS_USB_DATA[6]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+    Warning (13010): Node "HPS_USB_DATA[7]~synth" File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 149
+Warning (13024): Output pins are stuck at VCC or GND
+    Warning (13410): Pin "VGA_SYNC_N" is stuck at GND File: /homes/user/stud/fall24/ty2534/Downloads/MazeGame/pacman-main/hardware/soc_system_top.sv Line: 188
+
 
 module vga_ball (
     input clk,
