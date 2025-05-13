@@ -1,27 +1,9 @@
-
-&i2c0 {
-    wm8731: audio-codec@1a {
-        compatible = "wlf,wm8731";
-        reg = <0x1a>;
-    };
-};
-
-sound {
-    compatible = "simple-audio-card";
-    simple-audio-card,name = "DE1-SoC-Audio";
-    simple-audio-card,format = "i2s";
-    simple-audio-card,bitclock-master = <&cpu_dai>;
-    simple-audio-card,frame-master = <&cpu_dai>;
-
-    simple-audio-card,cpu {
-        sound-dai = <&some_audio_interface>;
-    };
-
-    simple-audio-card,codec {
-        sound-dai = <&wm8731>;
-    };
-};
-
+  .audio_0_external_interface_BCLK                  (AUD_BCLK),
+     .audio_0_external_interface_DACDAT                (AUD_DACDAT),
+     .audio_0_external_interface_DACLRCK               (AUD_DACLRCK),
+     .audio_pll_0_audio_clk_clk                        (AUD_XCK),
+     .audio_and_video_config_0_external_interface_SDAT (FPGA_I2C_SDAT),
+     .audio_and_video_config_0_external_interface_SCLK (FPGA_I2C_SCLK)  
 module vga_ball (
     input clk,
     input reset,
